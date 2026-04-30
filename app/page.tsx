@@ -1,7 +1,18 @@
+import { Hero } from '@/components/sections/hero'
+import { Newsletter } from '@/components/sections/newsletter'
+import { allPosts } from 'contentlayer/generated'
+import { FeaturedPosts } from '@/components/sections/featured-posts'
+
 export default function Home() {
+  const featuredPosts = allPosts
+    .filter((post) => post.isFeatured && !post.isDraft)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
   return (
-    <main className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl font-bold">数字游民生活志 - 开发中</h1>
-    </main>
+    <>
+      <Hero />
+      <FeaturedPosts posts={featuredPosts} />
+      <Newsletter />
+    </>
   )
 }
