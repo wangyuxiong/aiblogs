@@ -1,11 +1,10 @@
 import { notFound } from 'next/navigation'
 import { allPosts } from 'contentlayer/generated'
-import { useMDXComponent } from 'next-contentlayer/hooks'
 import { Metadata } from 'next'
 import { Clock, MapPin, Calendar } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-import { mdxComponents } from '@/components/content/mdx-components'
 import { TableOfContents } from '@/components/content/table-of-contents'
+import { MDXContentWrapper } from './mdx-content'
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>
@@ -66,7 +65,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound()
   }
 
-  const MDXContent = useMDXComponent(post.body.code)
   const headings = extractHeadings(post.body.raw)
 
   return (
@@ -109,7 +107,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             {/* Content */}
             <div className="prose prose-lg max-w-none">
               <div className="drop-cap">
-                <MDXContent components={mdxComponents} />
+                <MDXContentWrapper code={post.body.code} />
               </div>
             </div>
           </div>
