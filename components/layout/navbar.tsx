@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 const navLinks = [
   { href: '/about', label: '关于' },
   { href: '/blog', label: '日志' },
+  { href: '/portfolio', label: '作品集' },
   { href: '#', label: '地图' },
   { href: '#', label: '订阅' },
 ]

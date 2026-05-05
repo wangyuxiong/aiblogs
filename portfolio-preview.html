@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>作品集 - 数字游民生活志</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fafafa;
+      color: #1a1a1a;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 16px 0;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+    .nav-links a {
+      color: #666;
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: #2563eb;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 42px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .hero .subtitle {
+      font-size: 18px;
+      color: #666;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Projects Grid */
+    .projects {
+      padding: 60px 0;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2563eb;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 32px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
+    }
+
+    /* Project Card */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e5e5e5;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .card:hover {
+      border-color: #2563eb;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.1);
+      transform: translateY(-2px);
+    }
+    .card-image {
+      height: 200px;
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-image::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234f46e5' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+    .card-image .icon {
+      font-size: 48px;
+      opacity: 0.9;
+    }
+    .card-content {
+      padding: 24px;
+    }
+    .card-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .card-tags {
+      display: flex;
+      gap: 8px;
+    }
+    .tag {
+      padding: 4px 10px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .tag.primary {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+
+    /* Landing Page Preview */
+    .preview-section {
+      margin-top: 60px;
+      padding: 60px 0;
+      background: #fff;
+      border-top: 1px solid #e5e5e5;
+    }
+    .preview-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .preview-header h2 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .preview-header p {
+      color: #666;
+    }
+    .browser-frame {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e5e5e5;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    }
+    .browser-header {
+      background: #f8fafc;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .browser-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .browser-dot.red { background: #ef4444; }
+    .browser-dot.yellow { background: #f59e0b; }
+    .browser-dot.green { background: #22c55e; }
+    .browser-url {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+    }
+    .browser-content {
+      padding: 40px;
+      min-height: 400px;
+    }
+
+    /* Landing Page Styles */
+    .landing-hero {
+      text-align: center;
+      padding: 60px 0 40px;
+    }
+    .landing-hero h1 {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+    }
+    .landing-hero .slogan {
+      font-size: 18px;
+      color: #2563eb;
+      font-weight: 500;
+      margin-bottom: 24px;
+    }
+    .landing-hero .desc {
+      font-size: 16px;
+      color: #666;
+      max-width: 500px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: #2563eb;
+      color: #fff;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .cta-button:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 40px;
+      padding-top: 40px;
+      border-top: 1px solid #e5e5e5;
+    }
+    .feature {
+      text-align: center;
+      padding: 20px;
+    }
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: #dbeafe;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 24px;
+    }
+    .feature h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .feature p {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .tech-stack {
+      margin-top: 40px;
+      padding-top: 40px;
+      border-top: 1px solid #e5e5e5;
+      text-align: center;
+    }
+    .tech-stack h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .tech-icons {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+    }
+    .tech-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .tech-logo {
+      width: 40px;
+      height: 40px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: #475569;
+    }
+    .tech-name {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 32px; }
+      .grid { grid-template-columns: 1fr; }
+      .features { grid-template-columns: 1fr; }
+      .nav-links { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <nav class="nav">
+        <div class="logo">数字游民生活志</div>
+        <div class="nav-links">
+          <a href="#">首页</a>
+          <a href="#">博客</a>
+          <a href="#" class="active">作品集</a>
+          <a href="#">关于</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Portfolio Hero -->
+  <section class="hero">
+    <div class="container">
+      <h1>作品集</h1>
+      <p class="subtitle">探索我构建的数字产品，每一个项目都是技术实践与创意表达的融合</p>
+    </div>
+  </section>
+
+  <!-- Projects Grid -->
+  <section class="projects">
+    <div class="container">
+      <h2 class="section-title">精选项目</h2>
+      <div class="grid">
+        <!-- Project Card 1 -->
+        <div class="card">
+          <div class="card-image">
+            <span class="icon">✍️</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">文心启航 - AI 写作教练</h3>
+            <p class="card-desc">基于 Tauri + React 构建的桌面端 AI 写作导师应用。通过分步引导，帮助用户完成从选题、构思到成稿的全流程作文创作。</p>
+            <div class="card-tags">
+              <span class="tag primary">Tauri</span>
+              <span class="tag">React</span>
+              <span class="tag">TypeScript</span>
+              <span class="tag">Tailwind</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Card 2 -->
+        <div class="card">
+          <div class="card-image" style="background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);">
+            <span class="icon">🚀</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">个人博客系统</h3>
+            <p class="card-desc">基于 Next.js + Contentlayer 构建的静态博客，支持 MDX 内容管理、自动生成目录、响应式设计。</p>
+            <div class="card-tags">
+              <span class="tag primary">Next.js</span>
+              <span class="tag">TypeScript</span>
+              <span class="tag">Tailwind</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Card 3 -->
+        <div class="card">
+          <div class="card-image" style="background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);">
+            <span class="icon">🛠️</span>
+          </div>
+          <div class="card-content">
+            <h3 class="card-title">开发工具集</h3>
+            <p class="card-desc">一系列提升开发效率的工具和脚本，包含 Git 工作流优化、自动化部署、代码生成器等实用工具。</p>
+            <div class="card-tags">
+              <span class="tag">Python</span>
+              <span class="tag">Bash</span>
+              <span class="tag">CLI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Landing Page Preview -->
+  <section class="preview-section">
+    <div class="container">
+      <div class="preview-header">
+        <h2>文心启航 Landing Page 预览</h2>
+        <p>点击上方项目卡片可查看完整 Landing Page</p>
+      </div>
+      <div class="browser-frame">
+        <div class="browser-header">
+          <div class="browser-dot red"></div>
+          <div class="browser-dot yellow"></div>
+          <div class="browser-dot green"></div>
+          <div class="browser-url">https://mind-keeper.com/projects/writing-coach</div>
+        </div>
+        <div class="browser-content">
+          <div class="landing-hero">
+            <h1>文心启航</h1>
+            <p class="slogan">「AI 写作导师，引导你完成作文创作」</p>
+            <p class="desc">一款专为中小学生设计的 AI 辅助写作工具。通过结构化的引导和智能反馈，让写作不再困难。</p>
+            <a href="#" class="cta-button">
+              <span>🚀</span>
+              <span>了解更多</span>
+            </a>
+          </div>
+
+          <div class="features">
+            <div class="feature">
+              <div class="feature-icon">🤖</div>
+              <h3>AI 智能引导</h3>
+              <p>多模型支持（Claude/通义千问），分步式创作指导</p>
+            </div>
+            <div class="feature">
+              <div class="feature-icon">📝</div>
+              <h3>实时 Markdown 编辑</h3>
+              <p>所见即所得的 Markdown 编辑器，支持实时预览</p>
+            </div>
+            <div class="feature">
+              <div class="feature-icon">💾</div>
+              <h3>本地数据存储</h3>
+              <p>基于 Tauri 的本地 SQLite 存储，隐私安全</p>
+            </div>
+          </div>
+
+          <div class="tech-stack">
+            <h3>技术栈</h3>
+            <div class="tech-icons">
+              <div class="tech-item">
+                <div class="tech-logo">🦀</div>
+                <span class="tech-name">Tauri</span>
+              </div>
+              <div class="tech-item">
+                <div class="tech-logo">⚛️</div>
+                <span class="tech-name">React</span>
+              </div>
+              <div class="tech-item">
+                <div class="tech-logo">🔷</div>
+                <span class="tech-name">TypeScript</span>
+              </div>
+              <div class="tech-item">
+                <div class="tech-logo">🎨</div>
+                <span class="tech-name">Tailwind</span>
+              </div>
+              <div class="tech-item">
+                <div class="tech-logo">🐻</div>
+                <span class="tech-name">Zustand</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
