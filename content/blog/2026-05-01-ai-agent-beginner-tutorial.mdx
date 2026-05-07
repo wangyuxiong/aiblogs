@@ -1,0 +1,536 @@
+---
+title: "AI Agent 入门：从零搭建你的第一个智能助手"
+excerpt: "手把手教你从零开始搭建一个 AI Agent。包含核心概念讲解、Python 代码示例、工具选型建议，新手友好。"
+date: 2026-05-01
+category: remote-work
+tags: ["AI Agent", "教程", "Python", "入门"]
+isDraft: true
+coverImage: "/images/ai-agent-beginner-tutorial-cover.svg"
+---
+
+# AI Agent 入门：从零搭建你的第一个智能助手
+
+去年年底，我第一次认真折腾 AI Agent 的时候，踩了不少坑。那时候 LangChain 刚火，各种框架满天飞，看了一天文档还是不知道怎么把一个能用的 Agent 跑起来。
+
+这篇文章就是我踩坑后的总结。我会用最直白的语言，带你从零搭建一个真正能工作的 AI Agent。不需要你懂什么深度学习，只要你会写 Python，就能跟着做出来。
+
+## 什么是 AI Agent？
+
+先说点大白话。
+
+你可能用过 ChatGPT。你问问题，它回答。但它本质上是一个**聊天机器人** —— 它不能帮你查天气、不能帮你发邮件、不能帮你操作电脑。它能做的只是"说话"。
+
+AI Agent 不一样。Agent = 大语言模型 + 工具 + 记忆 + 规划能力。
+
+打个比方：
+
+- **大语言模型**是大脑，负责理解和推理
+- **工具**是手和脚，让 Agent 能真正"做事"
+- **记忆**让 Agent 记住之前的对话和决策
+- **规划**让 Agent 知道"先做什么、再做什么"
+
+所以 Agent 不是一个只会聊天的模型，而是一个**能自主行动的智能体**。你给它一个目标，它自己拆解任务、调用工具、一步步完成。
+
+这就是为什么现在大家都在说：Agent 是 AI 应用的下一个形态。
+
+## Agent 的核心三要素
+
+### 1. 工具使用（Function Calling）
+
+这是 Agent 最基础的能力 —— 让大模型学会"调用函数"。
+
+举个例子。你问："北京今天天气怎么样？"
+
+普通大模型会说："我不知道，我没有实时数据。"
+
+但如果你给它一个 `get_weather(city)` 的工具，它就能：
+
+1. 识别到用户想查天气
+2. 决定调用 `get_weather` 函数，传入 `city="北京"`
+3. 拿到返回结果后，用自然语言组织回答
+
+这个"决定调用哪个函数、传入什么参数"的能力，就是 Function Calling。OpenAI、Anthropic、Google 的 API 都已经原生支持。
+
+### 2. 记忆（Memory）
+
+Agent 的记忆分为两种：
+
+**短期记忆**：就是当前对话的上下文。你说了什么、Agent 做了什么，都放在对话历史里。这个很好理解，就是聊天记录的上下文。
+
+**长期记忆**：这个更有意思。比如你告诉 Agent 你住在北京，三天后你问"今天适合出门吗？"，Agent 应该记得你住在北京，然后查北京的天气。
+
+短期记忆通常用对话历史数组实现。长期记忆的实现方式很多：向量数据库（检索相关记忆）、键值存储（存用户偏好）、或者简单的文件存储。
+
+### 3. 规划（ReAct 模式）
+
+这是 Agent 最核心的能力 —— **先思考，再行动**。
+
+ReAct（Reasoning + Acting）是最经典的 Agent 模式。它的核心循环是：
+
+```
+思考（Thought） → 行动（Action） → 观察结果（Observation） → 继续思考 → ... → 最终回答
+```
+
+举个实际例子。用户问："北京和上海今天哪个城市气温更高？"
+
+Agent 的 ReAct 循环可能是这样的：
+
+```
+Thought: 我需要查北京和上海两地的天气，然后比较气温。
+Action: 调用 get_weather("北京")
+Observation: {"city": "北京", "temp": 22, "condition": "晴"}
+
+Thought: 北京的天气查到了，现在需要查上海的。
+Action: 调用 get_weather("上海")
+Observation: {"city": "上海", "temp": 25, "condition": "多云"}
+
+Thought: 两个城市的气温都拿到了。北京 22°C，上海 25°C，上海更高。
+Final Answer: 上海今天气温更高，25°C 对比北京的 22°C。
+```
+
+这就是 Agent "思考-行动-观察"的完整循环。它不是一次性生成答案，而是**逐步推理、逐步执行**。
+
+## 实战：从零搭建第一个 Agent
+
+好了，理论说得够多了。让我们动手写代码。
+
+我们要搭建一个天气查询 Agent：你告诉它城市名，它自动调用天气 API，然后用自然语言回答你。
+
+### 环境准备
+
+我用的技术栈：
+
+- **Python 3.10+**
+- **OpenAI API**（gpt-4o-mini 就够了，便宜又快）
+- **requests**（调用天气 API）
+
+先安装依赖：
+
+```bash
+pip install openai requests
+```
+
+然后设置环境变量：
+
+```bash
+export OPENAI_API_KEY="你的 API Key"
+```
+
+天气 API 我用的是 wttr.in，这是一个免费的天气查询服务，不需要注册：
+
+```bash
+curl wttr.in/Beijing?format=j1
+```
+
+### 第一步：定义工具函数
+
+Agent 需要"手"去做事。我们来定义一个查询天气的工具：
+
+```python
+import requests
+import json
+
+def get_weather(city: str) -> str:
+    """查询指定城市的天气信息。
+
+    Args:
+        city: 城市名称（英文），如 Beijing, Shanghai, Tokyo
+
+    Returns:
+        JSON 格式的天气信息字符串
+    """
+    url = f"https://wttr.in/{city}?format=j1"
+    response = requests.get(url, timeout=10)
+    data = response.json()
+
+    # 提取关键信息
+    current = data["current_condition"][0]
+    temp = current["temp_C"]
+    desc = current["weatherDesc"][0]["value"]
+    humidity = current["humidity"]
+
+    return json.dumps({
+        "city": city,
+        "temperature_c": temp,
+        "description": desc,
+        "humidity": humidity,
+    }, ensure_ascii=False)
+```
+
+这个函数接受城市名，返回天气信息的 JSON 字符串。简单、直接。
+
+接下来，我们需要把工具的**描述信息**告诉大模型，让它知道有哪些工具可以用：
+
+```python
+# 工具描述，用于告诉大模型这个工具的功能和参数
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "查询指定城市的当前天气信息，包括温度、天气状况和湿度",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "城市名称（英文），例如：Beijing, Shanghai, New York",
+                    }
+                },
+                "required": ["city"],
+            },
+        }
+    }
+]
+```
+
+### 第二步：构建 Agent 循环
+
+这是最核心的部分。我们需要实现 ReAct 循环：
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+# 工具名到函数的映射
+AVAILABLE_TOOLS = {
+    "get_weather": get_weather,
+}
+
+
+def run_agent(user_input: str, max_iterations: int = 5) -> str:
+    """运行 Agent 循环，直到得到最终答案或达到最大迭代次数。
+
+    Args:
+        user_input: 用户的自然语言输入
+        max_iterations: 最大循环次数，防止无限循环
+
+    Returns:
+        Agent 的最终回答
+    """
+    # 初始化对话消息
+    messages = [
+        {
+            "role": "system",
+            "content": "你是一个智能助手。当需要查询天气时，使用 get_weather 工具。"
+            "得到工具返回结果后，用简洁的中文回答用户。",
+        },
+        {"role": "user", "content": user_input},
+    ]
+
+    for i in range(max_iterations):
+        # Step 1: 调用大模型
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            tools=TOOLS,
+            tool_choice="auto",  # 让模型自动决定是否需要调用工具
+        )
+
+        choice = response.choices[0]
+        message = choice.message
+
+        # Step 2: 检查模型是否要求调用工具
+        if choice.finish_reason == "tool_calls":
+            tool_calls = message.tool_calls
+
+            # 把模型的回复（含工具调用请求）加入对话历史
+            messages.append(message)
+
+            # Step 3: 执行工具调用
+            for tool_call in tool_calls:
+                func_name = tool_call.function.name
+                func_args = json.loads(tool_call.function.arguments)
+
+                print(f"  [Agent] 调用工具: {func_name}({func_args})")
+
+                # 执行对应的工具函数
+                if func_name in AVAILABLE_TOOLS:
+                    result = AVAILABLE_TOOLS[func_name](**func_args)
+                else:
+                    result = f"错误：未知工具 {func_name}"
+
+                # 把工具返回结果加入对话历史
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result,
+                })
+
+        else:
+            # 模型不需要调用工具，直接返回回答
+            return message.content
+
+    return "抱歉，我未能在合理的步数内完成你的请求。"
+```
+
+让我来解释一下这段代码的核心逻辑：
+
+1. **初始化**：把系统提示词和用户输入放进 `messages` 数组
+2. **调用大模型**：把消息和工具列表一起发给 API，模型会决定是"直接回答"还是"调用工具"
+3. **判断 finish_reason**：
+   - 如果是 `tool_calls`，说明模型想调用工具 → 执行工具 → 把结果放回对话 → 继续循环
+   - 如果不是 `tool_calls`，说明模型已经给出了最终回答 → 返回结果
+4. **循环保护**：`max_iterations` 防止 Agent 陷入死循环
+
+### 第三步：运行看看
+
+把上面的代码组合起来，加一个入口：
+
+```python
+if __name__ == "__main__":
+    print("=== AI 天气 Agent ===")
+    print("输入城市名称查询天气，输入 'quit' 退出\n")
+
+    while True:
+        user_input = input("你: ").strip()
+        if user_input.lower() in ("quit", "exit", "q"):
+            print("再见！")
+            break
+
+        if not user_input:
+            continue
+
+        print("\nAgent 思考中...\n")
+        result = run_agent(user_input)
+        print(f"\nAgent: {result}\n")
+        print("-" * 40)
+```
+
+运行效果大概是这样的：
+
+```
+=== AI 天气 Agent ===
+输入城市名称查询天气，输入 'quit' 退出
+
+你: 北京今天天气怎么样？
+
+Agent 思考中...
+
+  [Agent] 调用工具: get_weather({'city': 'Beijing'})
+
+Agent: 北京当前气温 22°C，天气晴，湿度 45%。适合外出！
+
+----------------------------------------
+你: 上海和东京哪个更热？
+
+Agent 思考中...
+
+  [Agent] 调用工具: get_weather({'city': 'Shanghai'})
+  [Agent] 调用工具: get_weather({'city': 'Tokyo'})
+
+Agent: 上海当前 25°C，东京当前 20°C。上海更热一些。
+
+----------------------------------------
+```
+
+注意第二个例子，Agent 自动**并行调用**了两个城市的天气查询，然后做了对比。这就是 Agent 的规划能力在起作用 —— 它知道要比较两个城市，需要查两次天气。
+
+## 完整代码
+
+为了方便你直接运行，这是完整的代码文件：
+
+```python
+"""
+AI Agent 入门教程 - 天气查询 Agent
+依赖: pip install openai requests
+设置: export OPENAI_API_KEY="你的API Key"
+"""
+
+import os
+import json
+import requests
+from openai import OpenAI
+
+
+# ==================== 工具定义 ====================
+
+def get_weather(city: str) -> str:
+    """查询指定城市的天气信息。"""
+    url = f"https://wttr.in/{city}?format=j1"
+    response = requests.get(url, timeout=10)
+    data = response.json()
+
+    current = data["current_condition"][0]
+    return json.dumps({
+        "city": city,
+        "temperature_c": current["temp_C"],
+        "description": current["weatherDesc"][0]["value"],
+        "humidity": current["humidity"],
+    }, ensure_ascii=False)
+
+
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "查询指定城市的当前天气信息，包括温度、天气状况和湿度",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "城市名称（英文），例如：Beijing, Shanghai, New York",
+                    }
+                },
+                "required": ["city"],
+            },
+        }
+    }
+]
+
+AVAILABLE_TOOLS = {"get_weather": get_weather}
+
+
+# ==================== Agent 核心循环 ====================
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+
+def run_agent(user_input: str, max_iterations: int = 5) -> str:
+    """运行 Agent 循环，直到得到最终答案或达到最大迭代次数。"""
+    messages = [
+        {
+            "role": "system",
+            "content": "你是一个智能助手。当需要查询天气时，使用 get_weather 工具。"
+            "得到工具返回结果后，用简洁的中文回答用户。",
+        },
+        {"role": "user", "content": user_input},
+    ]
+
+    for i in range(max_iterations):
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            tools=TOOLS,
+            tool_choice="auto",
+        )
+
+        choice = response.choices[0]
+        message = choice.message
+
+        if choice.finish_reason == "tool_calls":
+            messages.append(message)
+
+            for tool_call in message.tool_calls:
+                func_name = tool_call.function.name
+                func_args = json.loads(tool_call.function.arguments)
+
+                print(f"  [Agent] 调用工具: {func_name}({func_args})")
+
+                if func_name in AVAILABLE_TOOLS:
+                    result = AVAILABLE_TOOLS[func_name](**func_args)
+                else:
+                    result = f"错误：未知工具 {func_name}"
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result,
+                })
+        else:
+            return message.content
+
+    return "抱歉，我未能在合理的步数内完成你的请求。"
+
+
+# ==================== 入口 ====================
+
+if __name__ == "__main__":
+    print("=== AI 天气 Agent ===")
+    print("输入城市名称查询天气，输入 'quit' 退出\n")
+
+    while True:
+        user_input = input("你: ").strip()
+        if user_input.lower() in ("quit", "exit", "q"):
+            print("再见！")
+            break
+        if not user_input:
+            continue
+
+        print("\nAgent 思考中...\n")
+        result = run_agent(user_input)
+        print(f"\nAgent: {result}\n")
+        print("-" * 40)
+```
+
+把这个文件保存为 `weather_agent.py`，然后运行 `python weather_agent.py`，你就能看到一个真正的 AI Agent 在跑了。
+
+## 下一步：从天气 Agent 到通用 Agent
+
+这个天气 Agent 只是一个起点。掌握了核心循环之后，你可以往很多方向扩展：
+
+### 1. 多工具 Agent
+
+给 Agent 加更多工具：搜索、发邮件、操作文件、查数据库……关键是每个工具都要有清晰的描述，模型才能正确选择。
+
+```python
+def search_web(query: str) -> str:
+    """使用搜索引擎查找网页信息。"""
+    ...
+
+def send_email(to: str, subject: str, body: str) -> str:
+    """发送邮件给指定收件人。"""
+    ...
+
+# 在 TOOLS 和 AVAILABLE_TOOLS 中注册即可
+```
+
+### 2. 长期记忆
+
+当前 Agent 每次对话都是"失忆"的。加长期记忆很简单：
+
+- **简单方案**：把对话历史存到文件里，下次启动时加载
+- **进阶方案**：用向量数据库（如 ChromaDB、Pinecone），把重要信息 embedding 后存储，需要时检索
+
+```python
+# 简单的文件存储方案
+MEMORY_FILE = "agent_memory.json"
+
+def save_memory(conversation: list):
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(conversation, f)
+
+def load_memory() -> list:
+    if os.path.exists(MEMORY_FILE):
+        with open(MEMORY_FILE) as f:
+            return json.load(f)
+    return []
+```
+
+### 3. 多 Agent 协作
+
+当你有多个 Agent（一个查天气、一个查航班、一个做决策），你可以让它们协作完成复杂任务。这就是现在流行的 Multi-Agent 架构。
+
+流行的框架包括：
+- **LangGraph**（LangChain 团队）：基于图的多 Agent 编排
+- **CrewAI**：角色扮演的多 Agent 协作
+- **AutoGen**（Microsoft）：可对话的多 Agent 框架
+
+### 4. 更复杂的规划模式
+
+ReAct 是最基础的模式。进阶的还有：
+
+- **Plan-and-Execute**：先制定完整计划，再逐步执行
+- **Reflection**：执行后自我反思，修正错误
+- **Tree of Thoughts**：同时探索多条推理路径
+
+## 总结
+
+今天我们从零搭建了一个能查天气的 AI Agent。核心要点：
+
+1. **Agent = 大模型 + 工具 + 记忆 + 规划**
+2. **Function Calling** 让模型能调用外部工具
+3. **ReAct 循环**（思考 → 行动 → 观察）是 Agent 的核心逻辑
+4. **对话历史数组**就是 Agent 的短期记忆
+
+这个模式可以扩展到任意场景。只要你定义了工具，Agent 就能自己决定什么时候调用、怎么调用。
+
+动手试试吧。代码就在那里，跑起来比看一百篇文章都有用。
+
+---
+
+*如果你对这个话题感兴趣，欢迎在评论区聊聊你想用 Agent 做什么。我下一篇文章会写"给 Agent 加上长期记忆"，敬请关注。*

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#16213e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0a0a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Grid pattern -->
+  <g opacity="0.05">
+    <line x1="0" y1="0" x2="0" y2="630" stroke="white" stroke-width="0.5"/><line x1="40" y1="0" x2="40" y2="630" stroke="white" stroke-width="0.5"/><line x1="80" y1="0" x2="80" y2="630" stroke="white" stroke-width="0.5"/><line x1="120" y1="0" x2="120" y2="630" stroke="white" stroke-width="0.5"/><line x1="160" y1="0" x2="160" y2="630" stroke="white" stroke-width="0.5"/><line x1="200" y1="0" x2="200" y2="630" stroke="white" stroke-width="0.5"/><line x1="240" y1="0" x2="240" y2="630" stroke="white" stroke-width="0.5"/><line x1="280" y1="0" x2="280" y2="630" stroke="white" stroke-width="0.5"/><line x1="320" y1="0" x2="320" y2="630" stroke="white" stroke-width="0.5"/><line x1="360" y1="0" x2="360" y2="630" stroke="white" stroke-width="0.5"/><line x1="400" y1="0" x2="400" y2="630" stroke="white" stroke-width="0.5"/><line x1="440" y1="0" x2="440" y2="630" stroke="white" stroke-width="0.5"/><line x1="480" y1="0" x2="480" y2="630" stroke="white" stroke-width="0.5"/><line x1="520" y1="0" x2="520" y2="630" stroke="white" stroke-width="0.5"/><line x1="560" y1="0" x2="560" y2="630" stroke="white" stroke-width="0.5"/><line x1="600" y1="0" x2="600" y2="630" stroke="white" stroke-width="0.5"/><line x1="640" y1="0" x2="640" y2="630" stroke="white" stroke-width="0.5"/><line x1="680" y1="0" x2="680" y2="630" stroke="white" stroke-width="0.5"/><line x1="720" y1="0" x2="720" y2="630" stroke="white" stroke-width="0.5"/><line x1="760" y1="0" x2="760" y2="630" stroke="white" stroke-width="0.5"/><line x1="800" y1="0" x2="800" y2="630" stroke="white" stroke-width="0.5"/><line x1="840" y1="0" x2="840" y2="630" stroke="white" stroke-width="0.5"/><line x1="880" y1="0" x2="880" y2="630" stroke="white" stroke-width="0.5"/><line x1="920" y1="0" x2="920" y2="630" stroke="white" stroke-width="0.5"/><line x1="960" y1="0" x2="960" y2="630" stroke="white" stroke-width="0.5"/><line x1="1000" y1="0" x2="1000" y2="630" stroke="white" stroke-width="0.5"/><line x1="1040" y1="0" x2="1040" y2="630" stroke="white" stroke-width="0.5"/><line x1="1080" y1="0" x2="1080" y2="630" stroke="white" stroke-width="0.5"/><line x1="1120" y1="0" x2="1120" y2="630" stroke="white" stroke-width="0.5"/><line x1="1160" y1="0" x2="1160" y2="630" stroke="white" stroke-width="0.5"/><line x1="1200" y1="0" x2="1200" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="0" x2="1200" y2="0" stroke="white" stroke-width="0.5"/><line x1="0" y1="40" x2="1200" y2="40" stroke="white" stroke-width="0.5"/><line x1="0" y1="80" x2="1200" y2="80" stroke="white" stroke-width="0.5"/><line x1="0" y1="120" x2="1200" y2="120" stroke="white" stroke-width="0.5"/><line x1="0" y1="160" x2="1200" y2="160" stroke="white" stroke-width="0.5"/><line x1="0" y1="200" x2="1200" y2="200" stroke="white" stroke-width="0.5"/><line x1="0" y1="240" x2="1200" y2="240" stroke="white" stroke-width="0.5"/><line x1="0" y1="280" x2="1200" y2="280" stroke="white" stroke-width="0.5"/><line x1="0" y1="320" x2="1200" y2="320" stroke="white" stroke-width="0.5"/><line x1="0" y1="360" x2="1200" y2="360" stroke="white" stroke-width="0.5"/><line x1="0" y1="400" x2="1200" y2="400" stroke="white" stroke-width="0.5"/><line x1="0" y1="440" x2="1200" y2="440" stroke="white" stroke-width="0.5"/><line x1="0" y1="480" x2="1200" y2="480" stroke="white" stroke-width="0.5"/><line x1="0" y1="520" x2="1200" y2="520" stroke="white" stroke-width="0.5"/><line x1="0" y1="560" x2="1200" y2="560" stroke="white" stroke-width="0.5"/><line x1="0" y1="600" x2="1200" y2="600" stroke="white" stroke-width="0.5"/>
+  </g>
+  <!-- Accent bar -->
+  <rect x="60" y="60" width="6" height="320" rx="3" fill="#0f3460"/>
+  <!-- Icon -->
+  <text x="100" y="200" font-size="80" font-family="system-ui, sans-serif">📰</text>
+  <!-- Title -->
+  <text x="100" y="290" font-size="56" font-weight="700" fill="white" font-family="system-ui, sans-serif">AI 日报</text>
+  <!-- Subtitle -->
+  <text x="100" y="350" font-size="28" fill="#94a3b8" font-family="system-ui, sans-serif">2026.05.05</text>
+  <!-- Brand -->
+  <text x="100" y="560" font-size="18" fill="#475569" font-family="system-ui, sans-serif">mind-keeper.com</text>
+  <!-- Accent line at bottom -->
+  <line x1="60" y1="580" x2="200" y2="580" stroke="#0f3460" stroke-width="2"/>
+  <!-- Decorative dots -->
+  <g fill="#0f3460" opacity="0.2">
+    <circle cx="1050" cy="100" r="4"/><circle cx="1070" cy="160" r="4"/><circle cx="1090" cy="220" r="4"/><circle cx="1050" cy="280" r="4"/><circle cx="1070" cy="340" r="4"/><circle cx="1090" cy="400" r="4"/><circle cx="1050" cy="460" r="4"/><circle cx="1070" cy="520" r="4"/>
+  </g>
+</svg>
