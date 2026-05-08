@@ -16,17 +16,51 @@ const playfair = Playfair_Display({
   display: 'swap',
 })
 
+const SITE_URL = 'https://mind-keeper.com'
+
 export const metadata: Metadata = {
   title: {
-    default: '数字游民生活志',
-    template: '%s | 数字游民生活志',
+    default: 'Mind Keeper | AI 技术博客',
+    template: '%s | Mind Keeper',
   },
-  description: '代码与咖啡，在世界的角落构建生活',
+  description: 'AI 编程、多智能体架构、开发者工具深度解析 — 用技术视角理解 AI 时代',
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: '/',
+    types: {
+      'application/rss+xml': '/feed.xml',
+    },
+  },
   openGraph: {
     type: 'website',
     locale: 'zh_CN',
-    url: 'https://your-domain.com',
-    siteName: '数字游民生活志',
+    url: SITE_URL,
+    siteName: 'Mind Keeper',
+    images: [{
+      url: '/images/og-default.png',
+      width: 1200,
+      height: 630,
+      alt: 'Mind Keeper',
+    }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@mindkeeper',
+    creator: '@mindkeeper',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: '', // TODO: add Google Search Console verification code
   },
 }
 

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="50%" style="stop-color:#1e293b"/>
+      <stop offset="100%" style="stop-color:#334155"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Grid pattern -->
+  <g opacity="0.05" stroke="white" stroke-width="1">
+    <line x1="0" y1="0" x2="0" y2="630"/>
+    <line x1="100" y1="0" x2="100" y2="630"/>
+    <line x1="200" y1="0" x2="200" y2="630"/>
+    <line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="500" y1="0" x2="500" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="700" y1="0" x2="700" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="900" y1="0" x2="900" y2="630"/>
+    <line x1="1000" y1="0" x2="1000" y2="630"/>
+    <line x1="1100" y1="0" x2="1100" y2="630"/>
+    <line x1="1200" y1="0" x2="1200" y2="630"/>
+    <line x1="0" y1="100" x2="1200" y2="100"/>
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="400" x2="1200" y2="400"/>
+    <line x1="0" y1="500" x2="1200" y2="500"/>
+    <line x1="0" y1="600" x2="1200" y2="600"/>
+  </g>
+  
+  <!-- Accent line -->
+  <rect x="100" y="240" width="200" height="4" rx="2" fill="url(#accent)"/>
+  
+  <!-- Title -->
+  <text x="100" y="310" font-size="64" font-weight="700" fill="white" font-family="system-ui, -apple-system, sans-serif">Mind Keeper</text>
+  
+  <!-- Subtitle -->
+  <text x="100" y="370" font-size="28" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif">AI 编程 · 多智能体架构 · 开发者工具</text>
+  
+  <!-- URL -->
+  <text x="100" y="530" font-size="24" fill="#475569" font-family="system-ui, -apple-system, sans-serif">mind-keeper.com</text>
+  
+  <!-- Decorative circles -->
+  <circle cx="1050" cy="150" r="80" fill="url(#accent)" opacity="0.15"/>
+  <circle cx="950" cy="480" r="60" fill="url(#accent)" opacity="0.1"/>
+  <circle cx="1100" cy="350" r="40" fill="url(#accent)" opacity="0.2"/>
+</svg>

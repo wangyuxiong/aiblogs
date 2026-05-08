@@ -3,8 +3,8 @@ import { PostCard } from '@/components/content/post-card'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: '日志归档 | 数字游民生活志',
-  description: '旅居指南、远程工作技巧与生活方式分享',
+  title: '博客 | Mind Keeper',
+  description: 'AI 编程、多智能体架构、开发者工具深度解析',
 }
 
 const categories = [

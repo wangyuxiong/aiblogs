@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /blog/
+Allow: /about/
+
+Sitemap: https://mind-keeper.com/sitemap.xml

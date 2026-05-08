@@ -1,0 +1,24 @@
+# AI 新闻源配置
+# 格式: blogwatcher-cli add "名称" "URL" --category "分类"
+
+# === AI 大厂官方 ===
+OpenAI Blog "https://openai.com/blog" --category "AI大厂"
+Anthropic News "https://www.anthropic.com/news" --category "AI大厂"
+Google AI Blog "https://blog.google/technology/ai/rss/" --category "AI大厂"
+Meta AI Blog "https://ai.meta.com/blog/" --category "AI大厂"
+Microsoft AI Blog "https://blogs.microsoft.com/ai/feed/" --category "AI大厂"
+DeepMind Blog "https://deepmind.google/discover/blog/" --category "AI大厂"
+
+# === AI 技术社区 ===
+Hugging Face Blog "https://huggingface.co/blog" --category "AI社区"
+AI Engineering "https://www.aiengineering.dev/feed/" --category "AI社区"
+Lilian Weng "https://lilianweng.github.io/index.xml" --category "AI社区"
+Sebastian Raschka "https://sebastianraschka.com/blog/index.xml" --category "AI社区"
+
+# === 技术新闻 ===
+TechCrunch AI "https://techcrunch.com/category/artificial-intelligence/feed/" --category "技术新闻"
+The Verge AI "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" --category "技术新闻"
+Ars Technica AI "https://arstechnica.com/tag/ai/feed/" --category "技术新闻"
+
+# === 开源项目 ===
+GitHub Trending "https://github.com/trending" --category "开源动态"

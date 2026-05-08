@@ -10,7 +10,7 @@ export const Post = defineDocumentType(() => ({
     date: { type: 'date', required: true },
     category: {
       type: 'enum',
-      options: ['travel-guide', 'remote-work', 'income-report', 'gear', 'photography'],
+      options: ['travel-guide', 'remote-work', 'income-report', 'gear', 'photography', 'ai-news', 'ai-tutorial', 'open-source'],
       required: true,
     },
     tags: { type: 'list', of: { type: 'string' }, default: [] },
