@@ -8,9 +8,12 @@ export const metadata: Metadata = {
 }
 
 export default function DailyPage() {
-  // 只显示 ai-daily 分类的文章
+  // 显示 ai-daily 和 AI Daily 分类的文章
   const dailyPosts = allPosts
-    .filter((post) => post.category === 'ai-daily' && !post.isDraft)
+    .filter((post) => {
+      const cat = post.category?.toLowerCase() || ''
+      return (cat === 'ai-daily' || cat === 'ai daily' || cat === 'ai 日报') && !post.isDraft
+    })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
