@@ -9,6 +9,9 @@ export const metadata: Metadata = {
 
 const categories = [
   { id: 'all', label: '全部' },
+  { id: 'ai-daily', label: '日刊' },
+  { id: 'ai-news', label: 'AI新闻' },
+  { id: 'ai-tutorial', label: 'AI教程' },
   { id: 'travel-guide', label: '旅居指南' },
   { id: 'remote-work', label: '远程工作' },
   { id: 'income-report', label: '收入报告' },
