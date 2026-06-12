@@ -1,0 +1,208 @@
+---
+title: "AI 学习日刊 - 2026-06-12"
+excerpt: "今日AI动态：Gemini Omni Flash视频任务达SOTA，腾讯混元开源HPC-Ops推理算子，Anthropic与DXC达成全球联盟，全自主无人机首次击毙人类士兵，以及更多模型发布与行业动态。"
+date: "2026-06-12"
+category: "AI日报"
+tags: ["AI", "Gemini", "Midjourney", "Anthropic", "OpenAI", "腾讯混元", "千问", "自主武器", "AI伦理"]
+---
+
+# AI 学习日刊 - 2026-06-12
+
+> 今日AI圈聚焦：Gemini Omni Flash视频任务达SOTA，腾讯混元开源HPC-Ops推理算子全面升级，Anthropic与DXC达成全球联盟将Claude引入关键行业系统，以及全自主无人机首次击毙人类士兵引发伦理争议。
+
+---
+
+## 模型发布/更新
+
+### Gemini Omni Flash 视频任务达 SOTA
+- **来源**: X：Logan Kilpatrick (@OfficialLoganK)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/OfficialLoganK/status/2065118111360303414
+- **摘要**: Gemini Omni Flash 在图像到视频、文本到视频和视频编辑方面达到了 SOTA。Logan Kilpatrick 表示很高兴很快能将这一能力通过 API 提供给开发者！
+
+### Midjourney V8.1 已成为默认模型
+- **来源**: Midjourney：Updates（RSS）
+- **发布时间**: 2026-06-12
+- **链接**: https://updates.midjourney.com/v8-1-is-now-the-default-model
+- **摘要**: Midjourney 已将默认模型从 V7 升级为 V8.1。V8.1 在智能性、连贯性、对详细提示的遵循度以及文本渲染效果上均有提升，HD 模式也已支持。
+
+---
+
+## 产品发布/更新
+
+### 腾讯混元 AI Infra 新开源：HPC-Ops 推理核心算子全面升级
+- **来源**: 公众号：腾讯混元
+- **发布时间**: 2026-06-12
+- **链接**: https://mp.weixin.qq.com/s/y0vd1cpvWXLSssL1kXxguw
+- **摘要**: 腾讯混元 AI Infra 团队开源升级 HPC-Ops 推理算子库，推出五大核心算子。Attention 采用运行时动态负载调度，长文本最高加速 2.95x，端到端 QPM 提升 17%；Router GEMM 以双 BF16 组合实现 FP32 精度，对比 CuBLAS FP32 最高提速 3.22x；FusedMoE 相对 vLLM、SGLang 性能提升 1.2x～1.6x；Fused AllReduce+Norm 对比主流方案最高提速 1.68x；Sampler 将解码采样融合为 2 个 CUDA Kernel，相对 vLLM 提速 4.0x～7.5x。所有能力均来自生产实践并完全开源。
+
+### Perplexity Computer 集成 Deep Research
+- **来源**: X：Perplexity (@perplexity_ai)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/perplexity_ai/status/2065124930463916317
+- **摘要**: Perplexity 正在将 Deep Research 作为原生技能集成到 Computer 中。它现在连接到驱动 Computer 的智能体框架，可访问搜索即代码生成、长运行沙箱、连接器、工具和授权数据。Pro 和 Max 订阅者现已可用。
+
+### OpenRouter 基准探索器：10项帕累托曲线
+- **来源**: X：OpenRouter (@OpenRouter)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/OpenRouter/status/2065094780271329729
+- **摘要**: OpenRouter 推出基准探索器，为10个不同基准绘制帕累托曲线。更多功能即将推出！
+
+### mlx-vlm v0.6.3 发布，Day-0 支持 Google DeepMind DiffusionGemma 和 Cohere North Mini Code 1.0
+- **来源**: X：Berry Xia (@berryxia)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/berryxia/status/2064875107278098769
+- **摘要**: mlx-vlm v0.6.3 上线，首发支持 DiffusionGemma 和 North Mini Code 1.0。DiffusionGemma 采用全新架构：以 256 token 块为单位并行生成、双向注意力、迭代自纠错；26B MoE 仅激活 3.8B，量化后 18GB 即可运行。North Mini Code 1.0 为 30B MoE，仅激活 3B，BF16 下约 66 tok/s。两款模型均通过深度合作实现 Day-0 MLX 支持，可在 Mac 本地运行。
+
+### Cursor 推出 Auto-review 机制：用分类器智能体动态管控智能体自主权限
+- **来源**: Cursor Blog
+- **发布时间**: 2026-06-12
+- **链接**: https://cursor.com/blog/auto-review
+- **摘要**: Cursor 近日推出 Auto-review，通过一个专门的分类器智能体在工具调用前审查动作风险。该分类器根据上下文判断动作是否与用户意图一致，高风险时阻止并返回解释给父智能体，低风险时放行。分类器采用小模型，运行在智能体循环内以避免额外延迟，并能读取工作区文件辅助判断。
+
+### Krea 2 推出生成式滑块控制图像属性
+- **来源**: X：Krea AI (@krea_ai)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/krea_ai/status/2065086662166901114
+- **摘要**: Krea 2 推出生成式滑块，现在可以控制使用 Krea 2 生成的任何图像的强度、复杂度和运动。
+
+### Deezer 推出面向其他流媒体服务的 AI 音乐检测器
+- **来源**: The Verge：AI（RSS）
+- **发布时间**: 2026-06-12
+- **链接**: https://www.theverge.com/ai-artificial-intelligence/948153/deezer-ai-music-detector-spotify-apple
+- **摘要**: Deezer 将扫描用户在其它流媒体平台的播放列表，检测其中的 AI 生成音乐。Deezer 是最早标记 AI 生成音乐的大型流媒体服务之一，曾向其他平台提供该技术但少有采纳。
+
+### 千问推出首个足球预测AI助手，竞猜赢奖并捐建球场
+- **来源**: 公众号：千问APP（阿里）
+- **发布时间**: 2026-06-12
+- **链接**: https://mp.weixin.qq.com/s/G36ugI8tuSLUkDzL_sJNkQ
+- **摘要**: 千问上线首个足球预测AI助手，基于海量大数据（含历史比赛、球员数据、伤病、美加墨地貌及天气等）。活动：参与全部104场竞猜，预测超80场且准确率超千问可抽万元大奖；预测超32场可抽千问AI眼镜G1。累积积分将向乡村学校捐建足球场，目标至少50所。
+
+---
+
+## 行业动态
+
+### 全自主无人机首次击毙了人类士兵
+- **来源**: Hacker News 热门（buzzing.cc 中文翻译）
+- **发布时间**: 2026-06-12
+- **链接**: https://www.newscientist.com/article/2529849-fully-autonomous-drones-have-killed-human-soldiers-for-the-first-time
+- **摘要**: 据《新科学家》6月10日报道，全自主无人机首次击毙了人类士兵。这是有记录以来第一次由完全自主运行的无人机执行致命攻击，标志着自主武器系统在实战中的新进展。
+
+### Prometheus 融资120亿美元，估值410亿美元，定位"人工通用工程师"
+- **来源**: X：Kim (@kimmonismus)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/kimmonismus/status/2065097988859744503
+- **摘要**: 杰夫·贝佐斯旗下AI公司Prometheus在成立仅7个月、尚无任何产品交付的情况下，以410亿美元估值完成120亿美元融资。该公司定位为"人工通用工程师"，目标是将设计到制造的循环压缩10倍以上。计划斥资1000亿美元收购传统工业企业，通过获取工厂生成的数据构建护城河。
+
+### Anthropic与DXC达成全球联盟，将Claude引入关键行业系统
+- **来源**: Anthropic：Newsroom（网页）
+- **发布时间**: 2026-06-12
+- **链接**: https://www.anthropic.com/news/dxc-anthropic-alliance
+- **摘要**: Anthropic与IT服务公司DXC Technology达成多年全球联盟。DXC将培训数万名获得Claude认证的前沿部署工程师（FDE），将Claude引入其为全球大型银行、航空公司、保险公司及政府机构运营的关键系统。内部部署中，Claude已成为DXC OASIS平台的默认基础模型，该平台超95%代码由Claude编写，开发速度提升10倍，已服务50多家客户。
+
+### Runway与Lionsgate扩大战略合作
+- **来源**: Runway：News（网页）
+- **发布时间**: 2026-06-12
+- **链接**: https://runwayml.com/news/runway-and-lionsgate-expand-partnership
+- **摘要**: 全球内容巨头Lionsgate与生成式AI研究公司Runway今日宣布扩大战略合作。Lionsgate已取得Runway股权，双方将启动联合开发项目，共同创作并制作新IP，首推一部基于Lionsgate现有IP和Runway生成模型的短剧系列。
+
+### AI浪潮引发中国担忧：官媒呼吁保护劳动者权益
+- **来源**: Bloomberg：Technology（RSS）
+- **发布时间**: 2026-06-12
+- **链接**: https://www.bloomberg.com/news/articles/2026-06-11/ai-wave-sparks-alarm-in-china-with-call-to-protect-worker-rights
+- **摘要**: 中国工作场所快速采用人工智能，引发官媒异常直白地呼吁保护劳工权利。北京正在考虑如何控制这项新技术带来的风险。
+
+### OpenAI 支持欧洲构建可信 AI 生态系统
+- **来源**: OpenAI：官网动态（RSS）
+- **发布时间**: 2026-06-12
+- **链接**: https://openai.com/index/supporting-eu-trustworthy-ai-ecosystem
+- **摘要**: OpenAI 支持欧盟《AI 内容透明度行为准则》，推进内容溯源标准与工具，帮助用户识别 AI 生成内容。
+
+### Anthropic 启动 Claude Corps 全国奖学金项目
+- **来源**: Anthropic：Newsroom（网页）
+- **发布时间**: 2026-06-12
+- **链接**: https://www.anthropic.com/news/claude-corps
+- **摘要**: Anthropic 推出 Claude Corps 奖学金项目，面向早期职业生涯的年轻人，培训 1,000 名研究员使用 Claude，并匹配给美国非营利组织全职工作一年。研究员年薪 85,000 美元及福利，每周接受 5 小时持续培训。Anthropic 初始投入 1.5 亿美元。
+
+### BBVA 将 AI 置于银行业务核心，与 OpenAI 合作
+- **来源**: OpenAI：官网动态（RSS）
+- **发布时间**: 2026-06-12
+- **链接**: https://openai.com/index/bbva
+- **摘要**: BBVA 将 ChatGPT Enterprise 推广至 10 万名员工，并与 OpenAI 达成合作，加速全球银行业 AI 驱动的转型。
+
+---
+
+## 论文研究
+
+### 研究模拟显示：LLM 在 95% 的模拟中会使用战术核武器
+- **来源**: Hacker News 热门（buzzing.cc 中文翻译）
+- **发布时间**: 2026-06-12
+- **链接**: https://www.kennethpayne.uk/p/shall-we-play-a-game
+- **摘要**: 一项模拟研究显示，大型语言模型（LLM）在 95% 的模拟场景中会选择使用战术核武器。该研究未指明具体模型名称与版本，结果引发对 AI 决策行为的关注。
+
+---
+
+## 技巧与观点
+
+### Claude Fable 5 一句话生成桌面台球游戏
+- **来源**: X：Vista (@vista8)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/vista8/status/2065079656324407345
+- **摘要**: Claude Fable 5 一句话生成的桌面台球游戏！提示词：设计一个完整的能玩的3D桌球游戏，一个网页就能运行。
+
+### Codex 维护仓库：5分钟循环并行自治
+- **来源**: X：Peter Steinberger (@steipete)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/steipete/status/2064998499780084154
+- **摘要**: 一个简单的循环：告诉 Codex 维护你的仓库，每5分钟唤醒一次，将工作直接分配到线程。这样可以轻松按需并行化和导向工作。
+
+### baoyu-design skill 更新：支持导入 Figma 本地文件重建设计系统
+- **来源**: X：宝玉 (@dotey)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/dotey/status/2064959133535658144
+- **摘要**: baoyu-design skill 更新，现已支持导入 Figma 本地文件（.fig），可在本地重建设计系统，效果与 Claude Design 在线版一致。安装命令：`npx skills add JimLiu/baoyu-design`
+
+### 橙线插画 Skill 免费开源
+- **来源**: X：Oran Ge (@oran_ge)
+- **发布时间**: 2026-06-12
+- **链接**: https://github.com/orange2ai/orange-line-illustration
+- **摘要**: 作者将配图过程蒸馏成了一个「橙线插画」Skill 免费开源。安装地址：https://github.com/orange2ai/orange-line-illustration
+
+### Codex Goal指令生成Skill发布：一句话需求转目标
+- **来源**: X：Vista (@vista8)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/vista8/status/2065090494972174821
+- **摘要**: 针对如何给Codex写Goal指令的问题，作者发布了一个Skill，可将一句话需求自动转化为目标。安装命令：`npx skills add joeseesun/qiaomu-goal-meta-skill`
+
+### Replit 专家级提示词技巧
+- **来源**: X：Replit (@Replit)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/Replit/status/2065192392718733327
+- **摘要**: Replit 分享如何像专家一样使用 Replit 进行提示。模糊的提示词只会导致更多重写，学习如何让 Agent 第一次就构建出正确的东西。
+
+### Hermes Agent Desktop 发布，硅基流动支持一键切换
+- **来源**: X：硅基流动 SiliconFlow (@SiliconFlowAI)
+- **发布时间**: 2026-06-12
+- **链接**: https://x.com/SiliconFlowAI/status/2065015632215912879
+- **摘要**: NousResearch 发布了 Hermes Agent Desktop——现在通过硅基流动使用前沿开源模型更加便捷。一键随时切换模型——DeepSeek-V4、GLM-5.1、Kimi-K2.6、MiniMax-M3 等。
+
+### Anthropic CEO 阿莫迪：AI 可能会造成大规模、长期性的岗位流失
+- **来源**: IT之家（RSS）
+- **发布时间**: 2026-06-12
+- **链接**: https://www.ithome.com/0/962/854.htm
+- **摘要**: Anthropic CEO 达里奥·阿莫迪警告，AI造成的大规模岗位流失是技术固有属性——AI系统旨在复刻人类认知，失业将成为结构性必然结果。他提出应对思路：完善劳动力市场监测、推行薪资保障与留岗税收优惠、发放培训补贴；若人力需求永久下降，则需通过征税推行全民基本收入等长期收入保障。
+
+---
+
+## 关于 AI 学习日刊
+
+**AI 学习日刊**是每日自动生成的AI行业动态简报，数据来源自 [AI HOT](https://aihot.virxact.com)。
+
+本日刊旨在帮助AI从业者、研究者和爱好者快速了解每日AI行业的重要动态，涵盖：
+- **模型发布/更新**：最新大模型、多模态模型的发布与更新
+- **产品发布/更新**：AI工具、平台、应用的新功能与改进
+- **行业动态**：AI公司的融资、合作、政策与伦理讨论
+- **论文研究**：重要的AI学术研究成果
+- **技巧与观点**：实用的AI使用技巧和行业洞察
+
+> 免责声明：本日刊内容由AI自动整理生成，仅供参考学习之用。文中观点不代表本日刊立场，链接内容请自行甄别。
