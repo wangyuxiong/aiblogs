@@ -18,9 +18,9 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install pnpm
+      # 版本由 package.json 的 packageManager 字段决定；
+      # 同时显式传 version 会让 action-setup v4 报版本冲突。
       uses: pnpm/action-setup@v4
-      with:
-        version: 10
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
