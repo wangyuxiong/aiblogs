@@ -1,20 +1,11 @@
 import type { Metadata } from 'next'
-import { Inter, Playfair_Display } from 'next/font/google'
+// 自托管字体（npm 包内置 woff2），避免构建期依赖 Google Fonts
+import '@fontsource-variable/inter'
+import '@fontsource/playfair-display/400.css'
+import '@fontsource/playfair-display/700.css'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import './globals.css'
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-})
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-playfair',
-  display: 'swap',
-})
 
 const SITE_URL = 'https://mind-keeper.com'
 
@@ -70,7 +61,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="zh-CN" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="zh-CN">
       <body className="min-h-screen antialiased font-sans">
         <Navbar />
         <main className="min-h-screen">{children}</main>

@@ -1,0 +1,73 @@
+name: Daily AI Digest
+
+on:
+  schedule:
+    # 每天 00:00 UTC = 08:00 北京时间
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate daily digest from AIHOT
+        run: python3 scripts/aihot-daily.py --force
+
+      - name: Commit new digest
+        id: commit
+        run: |
+          if [ -z "$(git status --porcelain content/blog)" ]; then
+            echo "没有新内容，跳过提交"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add content/blog
+          git commit -m "feat: AI Daily $(TZ=Asia/Shanghai date +%F)"
+          git pull --rebase origin main
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # 注意：用 GITHUB_TOKEN 推送的提交不会触发 deploy.yml，
+      # 所以这里直接构建并部署，保证当天日报能上线。
+      - name: Install pnpm
+        if: steps.commit.outputs.changed == 'true'
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        if: steps.commit.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        if: steps.commit.outputs.changed == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        if: steps.commit.outputs.changed == 'true'
+        run: pnpm run build
+
+      - name: Deploy to server
+        if: steps.commit.outputs.changed == 'true'
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: "dist/"
+          target: "/var/www/aiblogs/"
+          strip_components: 1

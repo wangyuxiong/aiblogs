@@ -12,6 +12,20 @@
 
 ---
 
+## 每日日报由脚本自动生成
+
+- 每天 08:00（北京时间）由 `.github/workflows/daily.yml` 从 [AIHOT](https://aihot.news) 抓取过去 24 小时的**技术与产品**动态，生成 `content/blog/ai-daily-YYYY-MM-DD.mdx` 并自动部署。
+- 想手动补一期：
+
+```bash
+pnpm daily:aihot            # 生成当天日报（已存在则跳过）
+pnpm daily:aihot -- --force # 覆盖当天由脚本生成的文件
+```
+
+- 脚本只覆盖带生成标记的文件，不会动你手写的日报。
+
+---
+
 ## 方案概览
 
 | 方式 | 适用场景 | 难度 | 速度 |

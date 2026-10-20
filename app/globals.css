@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
+/* 让 Tailwind 的 font-sans 使用自托管 Inter */
+@theme inline {
+  --font-sans: var(--font-inter);
+}
+
 :root {
+  --font-inter: 'Inter Variable', ui-sans-serif, system-ui, -apple-system,
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-playfair: 'Playfair Display', Georgia, 'Times New Roman',
+    'Songti SC', 'Noto Serif SC', serif;
+
   --background: 0 0% 100%;
   --foreground: 0 0% 9%;
   --accent: 220 90% 56%;
