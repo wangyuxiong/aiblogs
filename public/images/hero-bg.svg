@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#020617"/>
+      <stop offset="45%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e1b4b"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#3b82f6; stop-opacity:0.35"/>
+      <stop offset="100%" style="stop-color:#3b82f6; stop-opacity:0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#8b5cf6; stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#8b5cf6; stop-opacity:0"/>
+    </radialGradient>
+    <pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.5" fill="white" opacity="0.06"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Dot grid -->
+  <rect width="1920" height="1080" fill="url(#dots)"/>
+
+  <!-- Glows -->
+  <ellipse cx="1450" cy="260" rx="600" ry="420" fill="url(#glow1)"/>
+  <ellipse cx="380" cy="880" rx="700" ry="450" fill="url(#glow2)"/>
+
+  <!-- Neural network lines -->
+  <g stroke="#3b82f6" stroke-width="1" opacity="0.25">
+    <path d="M 150 200 Q 500 120 850 320 T 1600 200" fill="none"/>
+    <path d="M 100 700 Q 480 820 900 620 T 1800 760" fill="none"/>
+    <path d="M 300 1000 Q 700 900 1200 980 T 1900 900" fill="none"/>
+  </g>
+  <g stroke="#8b5cf6" stroke-width="1" opacity="0.2">
+    <path d="M 200 450 Q 600 380 1000 540 T 1850 430" fill="none"/>
+    <path d="M 150 900 Q 550 640 950 780 T 1750 560" fill="none"/>
+  </g>
+
+  <!-- Nodes -->
+  <g fill="#60a5fa" opacity="0.5">
+    <circle cx="150" cy="200" r="4"/>
+    <circle cx="850" cy="320" r="5"/>
+    <circle cx="1600" cy="200" r="4"/>
+    <circle cx="100" cy="700" r="4"/>
+    <circle cx="900" cy="620" r="5"/>
+    <circle cx="1800" cy="760" r="4"/>
+    <circle cx="200" cy="450" r="4"/>
+    <circle cx="1000" cy="540" r="6"/>
+    <circle cx="1850" cy="430" r="4"/>
+  </g>
+  <g fill="#a78bfa" opacity="0.45">
+    <circle cx="300" cy="1000" r="4"/>
+    <circle cx="700" cy="900" r="3"/>
+    <circle cx="1200" cy="980" r="5"/>
+    <circle cx="150" cy="900" r="4"/>
+    <circle cx="950" cy="780" r="5"/>
+    <circle cx="1750" cy="560" r="4"/>
+  </g>
+
+  <!-- Horizon line -->
+  <line x1="0" y1="540" x2="1920" y2="540" stroke="url(#fade-line)" stroke-width="1" opacity="0.15"/>
+  <defs>
+    <linearGradient id="fade-line" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6; stop-opacity:0"/>
+      <stop offset="50%" style="stop-color:#60a5fa; stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6; stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+</svg>

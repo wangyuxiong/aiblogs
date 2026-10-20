@@ -1,6 +1,14 @@
 # 博客文章发布手册
 
-> 在任何设备上快速发布 Markdown 文章到 mind-keeper.com
+> 在任何设备上把 Markdown 文章发布到 mind-keeper.com
+
+---
+
+## 先记住三条硬规则
+
+1. 文章必须放在 `content/blog/` 下，扩展名必须是 **`.mdx`**（contentlayer 只匹配 `*.mdx`）。
+2. frontmatter 必须包含 `title`、`excerpt`、`date`、`category`。
+3. 推送 `main` 后由 GitHub Actions 自动构建部署，约 2–3 分钟生效。
 
 ---
 
@@ -8,219 +16,111 @@
 
 | 方式 | 适用场景 | 难度 | 速度 |
 |------|----------|------|------|
-| **方式一：GitHub Web 上传** | 临时设备、手机、iPad | ⭐ 最简单 | 2-3分钟 |
-| **方式二：命令行推送** | 常用设备（Mac/PC） | ⭐⭐ 简单 | 1-2分钟 |
-| **方式三：SSH 远程服务器** | 已登录服务器时 | ⭐⭐ 简单 | 1分钟 |
-| **方式四：API 自动发布** | 程序化发布 | ⭐⭐⭐ 中等 | 30秒 |
+| **方式一：GitHub Web 上传** | 临时设备、手机、iPad | ⭐ 最简单 | 2–3 分钟 |
+| **方式二：本地脚本 / Git** | 常用设备（Mac/PC） | ⭐⭐ 简单 | 1 分钟 |
+| **方式三：服务器上 git push** | 已登录服务器时 | ⭐⭐ 简单 | 1 分钟 |
+| **方式四：GitHub API** | 程序化发布 | ⭐⭐⭐ 中等 | 30 秒 |
 
 ---
 
-## 方式一：GitHub Web 上传（推荐临时使用）
+## 方式一：GitHub Web 上传
 
-适合：没有配置环境的设备、手机、iPad、他人电脑
-
-### 步骤
-
-1. **打开 GitHub 仓库**
-   ```
-   https://github.com/wangyuxiong/aiblogs/tree/main/content/blog
-   ```
-
-2. **点击 "Add file" → "Upload files"**
-
-3. **拖拽或选择你的 `.md` 文件**
-   - 文件名格式：`article-name.md`（英文，用连字符）
-   - 确保文件扩展名是 `.md`
-
-4. **填写提交信息**
-   ```
-   blog: add article-title
-   ```
-
-5. **点击 "Commit changes"**
-
-6. **等待 2-3 分钟**，自动部署完成
+1. 打开 `https://github.com/wangyuxiong/aiblogs/upload/main/content/blog`
+2. 拖入 `.mdx` 文件（若你写的是 `.md`，请先改名为 `.mdx`）
+3. 提交信息示例：`blog: add article-title`
+4. 等待 Actions 构建完成
 
 ### 文件命名规范
 
 ```
-✅ 推荐：
-  - my-first-post.md
-  - travel-to-japan.md
-  - remote-work-tips.md
-
-❌ 避免：
-  - 我的第一篇文章.md  （中文文件名）
-  - post 1.md           （含空格）
-  - POST.MD             （大写扩展名）
+✅ my-first-post.mdx
+✅ 2026-06-12-new-model.mdx
+❌ 我的第一篇文章.mdx   （中文 slug 会进入 URL）
+❌ post 1.mdx           （含空格）
+❌ POST.MD              （大写扩展名 / 错误扩展名）
 ```
 
 ---
 
-## 方式二：命令行推送（推荐常用设备）
+## 方式二：本地脚本 / Git
 
-适合：自己的 Mac/PC，已配置好 Git
-
-### 首次配置（每设备一次）
+### 首次配置
 
 ```bash
-# 1. 克隆仓库（如果还没有）
-git clone https://github.com/wangyuxiong/aiblogs.git ~/blog-repo
-
-# 2. 进入目录
-cd ~/blog-repo
-
-# 3. 可选：添加快速命令到 ~/.zshrc 或 ~/.bashrc
-echo 'alias blog-deploy="cd ~/blog-repo && ./scripts/quick-publish.sh"' >> ~/.zshrc
-source ~/.zshrc
+git clone git@github.com:wangyuxiong/aiblogs.git ~/github/aiblogs
+cd ~/github/aiblogs
+pnpm install
 ```
 
-### 发布文章
+### 发布
 
 ```bash
-# 方法 A：使用脚本（推荐）
-./scripts/quick-publish.sh ~/Documents/my-article.md
+# 方式 A：快速创建带 frontmatter 的草稿
+./scripts/quick-publish.sh --new
 
-# 方法 B：手动复制 + 推送
-cp ~/Documents/my-article.md content/blog/
-git add .
-git commit -m "blog: add my-article"
-git push origin main
+# 方式 B：发布已有文件（.md 会自动改名为 .mdx）
+./scripts/quick-publish.sh ~/Documents/my-post.md "add my post"
+
+# 方式 C：手动复制 + 推送
+cp ~/Documents/my-post.mdx content/blog/
+git add content/blog/ && git commit -m "blog: add my-post" && git push origin main
 ```
 
-### 快速发布脚本
-
-创建 `~/bin/blog-publish`：
-
-```bash
-#!/bin/bash
-# 用法: blog-publish ~/Documents/文章.md "提交说明"
-
-REPO="$HOME/blog-repo"
-FILE="$1"
-MSG="${2:-publish new post}"
-
-if [ ! -f "$FILE" ]; then
-    echo "❌ 文件不存在: $FILE"
-    exit 1
-fi
-
-# 复制文件
-cp "$FILE" "$REPO/content/blog/"
-
-# 提交并推送
-cd "$REPO" || exit 1
-git pull origin main
-git add .
-git commit -m "blog: $MSG"
-git push origin main
-
-echo "✅ 发布成功！2-3分钟后可在 https://mind-keeper.com 查看"
-```
-
-使用：
-```bash
-chmod +x ~/bin/blog-publish
-blog-publish ~/Documents/my-post.md "add travel guide"
-```
+> `quick-publish.sh` 会在推送后打印线上地址：
+> `https://mind-keeper.com/blog/<slug>`
 
 ---
 
-## 方式三：SSH 远程服务器发布
-
-适合：已经通过 SSH 连接到服务器时
-
-### 服务器端快速发布
+## 方式三：服务器上发布
 
 ```bash
-# 1. SSH 登录服务器
-ssh root@47.111.125.142
-
-# 2. 进入博客仓库
-cd /opt/aiblogs  # 或你存放代码的目录
-
-# 3. 创建新文章
-cat > content/blog/my-new-post.md << 'EOF'
----
-title: "文章标题"
-excerpt: "文章摘要"
-date: 2026-05-07
-category: remote-work
-tags: [标签1, 标签2]
-isDraft: false
----
-
-# 正文开始...
-
-EOF
-
-# 4. 提交并推送
-git add .
-git commit -m "blog: add my-new-post"
-git push origin main
-
-# 5. 可选：本地构建（如果服务器内存足够）
-# npm run build
+ssh root@<SERVER_HOST>
+cd /var/www/aiblogs        # 或你 clone 仓库的位置
+# 编辑/新增 content/blog/xxx.mdx
+git add . && git commit -m "blog: new post" && git push origin main
 ```
 
-### 服务器端脚本
-
-服务器上已配置 `/opt/blog-publish.sh`：
-
-```bash
-# 用法
-/opt/blog-publish.sh "文章标题" "文章摘要" "remote-work"
-```
+服务器上**不需要**本地构建：构建由 GitHub Actions 完成，产物 SCP 到
+`/var/www/aiblogs`。详见 [DEPLOYMENT.md](DEPLOYMENT.md)。
 
 ---
 
-## 方式四：GitHub API 发布（高级）
-
-适合：程序化发布、批量发布、自动化脚本
-
-### 使用 curl 命令
+## 方式四：GitHub API
 
 ```bash
-# 配置
-TOKEN="ghp_your_token_here"
+TOKEN="ghp_xxx"
 REPO="wangyuxiong/aiblogs"
-FILE_PATH="content/blog/my-post.md"
+FILE_PATH="content/blog/my-post.mdx"   # 必须是 .mdx
 
-# 读取文件内容并 Base64 编码
-CONTENT=$(base64 -i ~/Documents/my-post.md)
+CONTENT=$(base64 -i ~/Documents/my-post.mdx)
 
-# 提交到 GitHub
 curl -X PUT \
   -H "Authorization: token $TOKEN" \
   -H "Accept: application/vnd.github.v3+json" \
   "https://api.github.com/repos/$REPO/contents/$FILE_PATH" \
-  -d '{
-    "message": "blog: add via api",
-    "content": "'$CONTENT'",
-    "branch": "main"
-  }'
+  -d "{
+    \"message\": \"blog: add via api\",
+    \"content\": \"$CONTENT\",
+    \"branch\": \"main\"
+  }"
 ```
 
 ---
 
-## 文章模板
+## 文章模板（`.mdx`）
 
-### 标准模板
-
-```markdown
+```mdx
 ---
 title: "文章标题"
-excerpt: "文章摘要，50-100字，用于列表页展示"
-date: 2026-05-07              # 发布日期
-category: remote-work       # 可选: travel-guide | remote-work | income-report | gear | photography
-tags: [标签1, 标签2]         # 自定义标签
-location: "杭州"              # 可选：地点
-coverImage: "/images/cover.jpg" # 可选：封面图路径
-isDraft: false                # true=草稿，false=发布
-isFeatured: false             # true=首页推荐
+excerpt: "文章摘要，50-100 字，用于列表页与 SEO 描述"
+date: 2026-06-12
+category: ai-news        # 必须是下方枚举之一
+tags: ["标签1", "标签2"]
+location: "杭州"          # 可选
+coverImage: "/images/ai-daily-cover.svg"  # 可选
+isDraft: false            # true 时不参与构建
+isFeatured: false
 ---
-
-# 文章标题
 
 > 引言或金句
 
@@ -233,141 +133,64 @@ isFeatured: false             # true=首页推荐
 - 要点 1
 - 要点 2
 
-## 第二部分
-
-正文内容...
-
-![图片描述](/images/photo.jpg)
-
 ## 总结
 
-总结要点...
-
 ---
 
-*写于 {{location}}，{{date}}*
+*写于 杭州，2026-06-12*
 ```
 
-### 快速创建命令
+### 可用分类（contentlayer enum）
 
-```bash
-# 创建带模板的新文章
-cat > "content/blog/$(date +%Y-%m-%d)-new-post.md" << EOF
----
-title: "$(date +%Y年%m月%d日) 文章标题"
-excerpt: "文章摘要..."
-date: $(date +%Y-%m-%d)
-category: remote-work
-tags: []
-isDraft: true
----
+`ai-daily` · `ai-news` · `ai-tutorial` · `open-source` ·
+`travel-guide` · `remote-work` · `income-report` · `gear` · `photography`
 
-# $(date +%Y年%m月%d日) 文章标题
-
-> 引言...
-
-## 正文
-
-开始写作...
-EOF
-```
-
----
-
-## 多设备同步方案
-
-### 推荐：Obsidian + Git 插件
-
-1. **主设备（Mac）**：安装 Obsidian + Git 插件
-2. **其他设备**：通过 GitHub Web 上传或命令行
-3. **同步策略**：
-   - 草稿：Obsidian `_drafts/` 文件夹
-   - 完成：复制到博客仓库 `content/blog/`
-   - 发布：`git push`
-
-### 文件传输方式
-
-```bash
-# 方式 A：scp 传输到服务器
-scp ~/Documents/post.md root@47.111.125.142:/tmp/
-
-# 方式 B：通过 GitHub（推荐）
-# 直接上传文件到 GitHub Web 界面
-
-# 方式 C：使用 transfer.sh 等临时文件服务
-curl --upload-file ~/Documents/post.md https://transfer.sh/post.md
-# 在其他设备下载
-```
+- 日刊统一用 `ai-daily`，封面统一 `/images/ai-daily-cover.svg`
+- 分类写错不会导致构建失败，但 `/daily` 等按分类过滤的页面会漏掉文章
 
 ---
 
 ## 常见问题
 
-### Q: 文章发布后没有立即显示？
+### 文章推送后没显示？
 
-A: GitHub Actions 需要 2-3 分钟构建部署。查看进度：
-```
-https://github.com/wangyuxiong/aiblogs/actions
-```
+1. 检查扩展名是否 `.mdx`、是否在 `content/blog/` 下
+2. 检查 `isDraft` 是否为 `false`
+3. 查看构建日志：`https://github.com/wangyuxiong/aiblogs/actions`
 
-### Q: 文件名重复怎么办？
+### 分类写错了怎么办？
 
-A: 使用时间戳前缀避免冲突：
+把 `category` 改成枚举值后重新推送即可；日刊页只显示 `ai-daily`。
+
+### 图片不显示？
+
+图片需放在 `public/images/`，frontmatter 写 `/images/xxx.svg`（或 png/jpg）。
+
+### 如何更新已发布文章？
+
+直接编辑 `content/blog/<slug>.mdx`（slug 即文件名去掉 `.mdx`，决定 URL），重新推送。
+
+### 本地预览
+
 ```bash
-mv post.md "$(date +%Y%m%d)-post.md"
+pnpm dev            # http://localhost:3000
+pnpm build          # 完整构建 + SEO 生成
 ```
-
-### Q: 如何更新已发布文章？
-
-A: 直接在 GitHub 上编辑文件并提交，或本地修改后重新推送。
-
-### Q: 没有 Git 环境怎么办？
-
-A: 使用方式一（GitHub Web 上传），无需任何配置。
-
-### Q: 文章格式错误？
-
-A: 检查：
-- Frontmatter（头部元数据）格式是否正确
-- `date` 格式是否为 `YYYY-MM-DD`
-- `category` 是否在允许的列表中
-- 文件扩展名是否为 `.md`
 
 ---
 
-## 快速检查清单
-
-发布前确认：
-
-- [ ] 文件名使用英文/拼音，不含空格
-- [ ] Frontmatter 包含 `title`, `excerpt`, `date`, `category`
-- [ ] `isDraft: false` 才会发布
-- [ ] 图片已上传到 `/public/images/`
-- [ ] 本地预览过（可选）
-
----
-
-## 一键命令速查
+## 速查
 
 ```bash
-# 最快方式：GitHub Web 上传
-# https://github.com/wangyuxiong/aiblogs/upload/main/content/blog
+# 一键发布已有文件
+./scripts/quick-publish.sh ~/Documents/my-post.md
 
-# 本地推送
+# 查看发布状态
+./scripts/ai-blog-publish.sh --status
+
+# 手动推送
 git add content/blog/ && git commit -m "blog: new post" && git push
 
-# 服务器推送（已登录时）
-cd /opt/aiblogs && git add . && git commit -m "blog: new post" && git push
-
-# 查看部署状态
+# 部署进度
 # https://github.com/wangyuxiong/aiblogs/actions
 ```
-
----
-
-## 联系方式
-
-遇到问题？
-- 查看部署日志：https://github.com/wangyuxiong/aiblogs/actions
-- 服务器地址：47.111.125.142
-- 博客地址：https://mind-keeper.com

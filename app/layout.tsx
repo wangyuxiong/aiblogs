@@ -20,10 +20,10 @@ const SITE_URL = 'https://mind-keeper.com'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Mind Keeper | AI 技术博客',
+    default: 'Mind Keeper | AI 学习日刊',
     template: '%s | Mind Keeper',
   },
-  description: 'AI 编程、多智能体架构、开发者工具深度解析 — 用技术视角理解 AI 时代',
+  description: 'AI 学习日刊：每天精选模型发布、Agent 工具、研究进展与行业动态，用最短时间了解 AI 前沿',
   metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: '/',

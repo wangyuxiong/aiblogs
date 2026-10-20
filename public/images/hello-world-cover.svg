@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#052e16"/>
+      <stop offset="55%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#134e4a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+
+  <!-- Horizon curves (new journey motif) -->
+  <g stroke="#10b981" stroke-width="1.5" opacity="0.3" fill="none">
+    <path d="M 0 750 Q 400 650 800 730 T 1600 680"/>
+    <path d="M 0 820 Q 400 720 800 800 T 1600 750"/>
+  </g>
+  <g stroke="#3b82f6" stroke-width="1.5" opacity="0.25" fill="none">
+    <path d="M 0 680 Q 400 580 800 660 T 1600 610"/>
+  </g>
+
+  <!-- Rising sun -->
+  <circle cx="800" cy="360" r="140" fill="url(#accent)" opacity="0.25"/>
+  <circle cx="800" cy="360" r="90" fill="#10b981" opacity="0.5"/>
+
+  <!-- Badge -->
+  <rect x="660" y="130" width="280" height="56" rx="28" fill="none" stroke="url(#accent)" stroke-width="2"/>
+  <text x="800" y="167" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="24" fill="#6ee7b7" font-weight="500">启程 · HELLO WORLD</text>
+
+  <!-- Main title -->
+  <text x="800" y="620" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="120" font-weight="800" fill="#ffffff">你好，新世界</text>
+
+  <!-- Divider -->
+  <rect x="620" y="680" width="360" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- Subtitle -->
+  <text x="800" y="760" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="32" fill="#cbd5e1">记录学习轨迹，分享技术实践</text>
+
+  <!-- Brand -->
+  <text x="800" y="880" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="28" fill="#94a3b8" letter-spacing="4">MIND KEEPER</text>
+</svg>

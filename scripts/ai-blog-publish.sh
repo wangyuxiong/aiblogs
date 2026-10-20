@@ -4,7 +4,7 @@
 
 set -e
 
-BLOG_REPO="$HOME/workspace/aiblogs"
+BLOG_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VAULT="${OBSIDIAN_PATH:-$HOME/Documents/Obsidian/blog}"
 
 # Colors

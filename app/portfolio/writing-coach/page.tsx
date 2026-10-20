@@ -82,26 +82,21 @@ const techStack = [
 export default function WritingCoachLandingPage() {
   return (
     <main className="min-h-screen bg-white">
-      {/* Back Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link
-              href="/portfolio"
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>返回作品集</span>
-            </Link>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold">数字游民</span>
-            </div>
-          </div>
+      {/* Back Navigation（根导航栏由布局渲染，这里只放页内返回链接） */}
+      <div className="pt-20 pb-2 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <Link
+            href="/portfolio"
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>返回作品集</span>
+          </Link>
         </div>
-      </nav>
+      </div>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50/50 to-white">
+      <section className="pt-6 pb-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50/50 to-white">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -124,10 +119,15 @@ export default function WritingCoachLandingPage() {
               让写作不再困难，激发创作灵感，培养写作思维。
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button className="flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20">
+              <a
+                href="https://github.com/wangyuxiong/writing-coach/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
+              >
                 <Download className="w-5 h-5" />
                 <span>下载试用</span>
-              </button>
+              </a>
               <a
                 href="https://github.com/wangyuxiong/writing-coach"
                 target="_blank"
@@ -337,8 +337,22 @@ export default function WritingCoachLandingPage() {
             © 2024 文心启航. 开源项目，欢迎贡献。
           </p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-gray-600 hover:text-gray-900">GitHub</a>
-            <a href="#" className="text-sm text-gray-600 hover:text-gray-900">文档</a>
+            <a
+              href="https://github.com/wangyuxiong/writing-coach"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              GitHub
+            </a>
+            <a
+              href="https://github.com/wangyuxiong/writing-coach#readme"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              文档
+            </a>
             <Link href="/portfolio" className="text-sm text-gray-600 hover:text-gray-900">作品集</Link>
           </div>
         </div>

@@ -14,25 +14,22 @@ const CONTENTLAYER_DIR = path.resolve(__dirname, '../.contentlayer')
 
 // Read contentlayer data
 function loadPosts() {
-  // Try multiple possible paths
-  const possibleDirs = [
-    path.join(CONTENTLAYER_DIR, 'generated', 'Post'),
-    path.join(CONTENTLAYER_DIR, '_generated'),
-  ]
-  
-  let contentDir = null
-  for (const dir of possibleDirs) {
-    if (fs.existsSync(dir)) {
-      contentDir = dir
-      break
-    }
+  // 优先读取 contentlayer 的聚合索引：它是当前构建的权威列表。
+  // （逐篇 JSON 可能残留已删除/移入 _drafts 的旧文章，不能直接扫描目录。）
+  const indexPath = path.join(CONTENTLAYER_DIR, 'generated', 'Post', '_index.json')
+  if (fs.existsSync(indexPath)) {
+    return JSON.parse(fs.readFileSync(indexPath, 'utf8'))
+      .filter(p => !p.isDraft)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
   }
-  
-  if (!contentDir) {
+
+  // 兼容旧版 contentlayer 输出
+  const contentDir = path.join(CONTENTLAYER_DIR, 'generated', 'Post')
+  if (!fs.existsSync(contentDir)) {
     console.warn('⚠️  .contentlayer not found. Run `next build` first.')
     return []
   }
-  
+
   const files = fs.readdirSync(contentDir).filter(f => f.endsWith('.json') && !f.startsWith('_'))
   return files
     .map(f => JSON.parse(fs.readFileSync(path.join(contentDir, f), 'utf8')))
@@ -41,17 +38,25 @@ function loadPosts() {
 }
 
 function generateSitemap(posts) {
-  const staticPages = ['/', '/blog', '/about']
+  // TODO: 如需新增页面，记得同步更新这里
+  const staticPages = [
+    { path: '/', priority: '1.0' },
+    { path: '/daily', priority: '0.9' },
+    { path: '/blog', priority: '0.8' },
+    { path: '/about', priority: '0.6' },
+    { path: '/portfolio', priority: '0.6' },
+    { path: '/portfolio/writing-coach', priority: '0.5' },
+  ]
   const urls = [
     ...staticPages.map(p => ({
-      loc: `${SITE_URL}${p}`,
+      loc: `${SITE_URL}${p.path}`,
       lastmod: new Date().toISOString().split('T')[0],
-      priority: p === '/' ? '1.0' : '0.8',
+      priority: p.priority,
     })),
     ...posts.map(p => ({
       loc: `${SITE_URL}/blog/${p.slug}`,
       lastmod: new Date(p.date).toISOString().split('T')[0],
-      priority: '0.7',
+      priority: p.category === 'ai-daily' ? '0.8' : '0.7',
     })),
   ]
 

@@ -1,4 +1,5 @@
 import { defineDocumentType, makeSource } from 'contentlayer/source-files'
+import rehypeSlug from 'rehype-slug'
 
 export const Post = defineDocumentType(() => ({
   name: 'Post',
@@ -26,7 +27,13 @@ export const Post = defineDocumentType(() => ({
     },
     readingTime: {
       type: 'number',
-      resolve: (post) => Math.ceil(post.body.raw.split(' ').length / 200),
+      resolve: (post) => {
+        const raw = post.body.raw
+        // 中文按字数（约 400 字/分钟），英文按词数（约 200 词/分钟）
+        const cjkCount = (raw.match(/[\u4e00-\u9fff]/g) ?? []).length
+        const wordCount = raw.split(/\s+/).filter((w) => /[a-zA-Z0-9]/.test(w)).length
+        return Math.max(1, Math.ceil(cjkCount / 400 + wordCount / 200))
+      },
     },
     url: {
       type: 'string',
@@ -38,4 +45,7 @@ export const Post = defineDocumentType(() => ({
 export default makeSource({
   contentDirPath: 'content',
   documentTypes: [Post],
+  mdx: {
+    rehypePlugins: [rehypeSlug],
+  },
 })

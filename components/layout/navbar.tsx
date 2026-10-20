@@ -2,22 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
-  { href: '/about', label: '关于' },
-  { href: '/blog', label: '日志' },
   { href: '/daily', label: '日刊' },
+  { href: '/blog', label: '日志' },
+  { href: '/about', label: '关于' },
   { href: '/portfolio', label: '作品集' },
-  { href: '#', label: '地图' },
-  { href: '#', label: '订阅' },
 ]
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,6 +26,10 @@ export function Navbar() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [pathname])
 
   return (
     <header
@@ -40,7 +44,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="text-lg font-semibold tracking-tight">
-            数字游民
+            Mind Keeper
           </Link>
 
           {/* Desktop Navigation */}
@@ -49,7 +53,12 @@ export function Navbar() {
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className={cn(
+                  'text-sm transition-colors',
+                  pathname === link.href || pathname.startsWith(`${link.href}/`)
+                    ? 'text-gray-900 font-medium'
+                    : 'text-gray-600 hover:text-gray-900'
+                )}
               >
                 {link.label}
               </Link>

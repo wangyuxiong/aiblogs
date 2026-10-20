@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Clock, MapPin } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { getCategoryLabel } from '@/lib/categories'
 
 type Post = {
   slug: string
@@ -20,14 +21,6 @@ type Post = {
 interface PostCardProps {
   post: Post
   variant?: 'large' | 'small'
-}
-
-const categoryLabels: Record<string, string> = {
-  'travel-guide': '旅居指南',
-  'remote-work': '远程工作',
-  'income-report': '收入报告',
-  'gear': '装备清单',
-  'photography': '摄影',
 }
 
 export function PostCard({ post, variant = 'small' }: PostCardProps) {
@@ -62,7 +55,7 @@ export function PostCard({ post, variant = 'small' }: PostCardProps) {
 
         <div className={`${isLarge ? 'mt-5' : 'mt-4'}`}>
           <div className="flex items-center gap-3 text-xs text-gray-500 mb-2">
-            <span className="text-blue-600 font-medium">{categoryLabels[post.category] || post.category}</span>
+            <span className="text-blue-600 font-medium">{getCategoryLabel(post.category)}</span>
             <span>{formatDate(post.date)}</span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />

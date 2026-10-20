@@ -1,33 +1,46 @@
 {
-  "name": "digital-nomad-blog",
+  "name": "mind-keeper-blog",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "dev": "next dev",
     "build": "next build && node scripts/generate-seo.js",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "normalize:content": "python3 scripts/normalize-content.py",
+    "gen:og": "python3 scripts/generate-og-image.py"
   },
   "dependencies": {
+    "clsx": "^2.1.0",
+    "contentlayer": "^0.3.4",
+    "date-fns": "^3.6.0",
+    "framer-motion": "^11.0.0",
+    "github-slugger": "2.0.0",
+    "lucide-react": "^0.400.0",
     "next": "15.0.0",
+    "next-contentlayer": "^0.3.4",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "contentlayer": "^0.3.4",
-    "next-contentlayer": "^0.3.4",
-    "framer-motion": "^11.0.0",
-    "lucide-react": "^0.400.0",
-    "clsx": "^2.1.0",
-    "tailwind-merge": "^2.3.0",
-    "date-fns": "^3.6.0"
+    "rehype-slug": "5.1.0",
+    "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^20.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "^5.5.0",
-    "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0",
+    "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
-    "autoprefixer": "^10.4.0"
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.5.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "contentlayer",
+      "esbuild",
+      "protobufjs",
+      "sharp"
+    ]
   }
 }

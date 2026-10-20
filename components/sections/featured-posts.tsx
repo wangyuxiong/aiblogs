@@ -15,9 +15,15 @@ type Post = {
 
 interface FeaturedPostsProps {
   posts: Post[]
+  title?: string
+  moreHref?: string
 }
 
-export function FeaturedPosts({ posts }: FeaturedPostsProps) {
+export function FeaturedPosts({
+  posts,
+  title = '精选内容',
+  moreHref = '/blog',
+}: FeaturedPostsProps) {
   if (posts.length === 0) return null
 
   const featuredPost = posts[0]
@@ -31,9 +37,9 @@ export function FeaturedPosts({ posts }: FeaturedPostsProps) {
             className="text-2xl sm:text-3xl font-serif font-bold"
             style={{ fontFamily: 'var(--font-playfair)' }}
           >
-            精选内容
+            {title}
           </h2>
-          <a href="/blog" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+          <a href={moreHref} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
             查看全部 →
           </a>
         </div>

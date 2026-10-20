@@ -1,20 +1,20 @@
 import { allPosts } from 'contentlayer/generated'
-import { PostCard } from '@/components/content/post-card'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'AI 学习日刊 | Mind Keeper',
+  title: 'AI 学习日刊',
   description: '每天精选 AI 领域最有价值的动态，帮你快速了解行业脉搏',
+  alternates: {
+    canonical: '/daily',
+  },
 }
 
 export default function DailyPage() {
-  // 显示 ai-daily 和 AI Daily 分类的文章
   const dailyPosts = allPosts
-    .filter((post) => {
-      const cat = post.category?.toLowerCase() || ''
-      return (cat === 'ai-daily' || cat === 'ai daily' || cat === 'ai 日报') && !post.isDraft
-    })
+    .filter((post) => post.category === 'ai-daily' && !post.isDraft)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  const sourceCount = '20+'
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8">
@@ -35,7 +35,7 @@ export default function DailyPage() {
             <span>•</span>
             <span>🤖 自动抓取</span>
             <span>•</span>
-            <span>📡 10+ 新闻源</span>
+            <span>📡 {sourceCount} 新闻源</span>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ export default function DailyPage() {
             <div className="text-sm text-gray-500">期数日刊</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-900">10+</div>
+            <div className="text-2xl font-bold text-gray-900">{sourceCount}</div>
             <div className="text-sm text-gray-500">新闻源</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">

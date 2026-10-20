@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation'
 import { allPosts } from 'contentlayer/generated'
 import { Metadata } from 'next'
+import GithubSlugger from 'github-slugger'
 import { Clock, MapPin, Calendar } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { getCategoryLabel } from '@/lib/categories'
+import { mdxComponents } from '@/components/content/mdx-components'
 import { TableOfContents } from '@/components/content/table-of-contents'
-import { MDXContentWrapper } from './mdx-content'
+import { MDXContent } from './mdx-content'
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>
@@ -23,7 +26,8 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   }
 
   return {
-    title: `${post.title} | Mind Keeper`,
+    // 布局模板会自动追加 " | Mind Keeper"，这里只写文章标题
+    title: post.title,
     description: post.excerpt,
     alternates: {
       canonical: `${SITE_URL}/blog/${post.slug}`,
@@ -47,22 +51,52 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 }
 
 export async function generateStaticParams() {
-  return allPosts.map((post) => ({
-    slug: post.slug,
-  }))
+  return allPosts
+    .filter((post) => !post.isDraft)
+    .map((post) => ({
+      slug: post.slug,
+    }))
+}
+
+/**
+ * 把标题里的行内 Markdown 还原为纯文本，
+ * 这样算出的 id 才能和 rehype-slug 基于渲染文本生成的 id 一致。
+ */
+function inlineMarkdownToText(text: string): string {
+  return text
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1') // 图片
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // 链接
+    .replace(/`([^`]+)`/g, '$1') // 行内代码
+    .replace(/~~([^~]+)~~/g, '$1') // 删除线
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // 加粗
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1') // 斜体
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/<[^>]+>/g, '') // 行内 HTML
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim()
 }
 
 function extractHeadings(content: string) {
+  const slugger = new GithubSlugger()
   const headings: Array<{ id: string; text: string; level: number }> = []
   const lines = content.split('\n')
 
   lines.forEach((line) => {
-    const match = line.match(/^(#{2,3})\s+(.+)$/)
+    // 所有标题都参与编号去重（与 rehype-slug 保持一致），
+    // 但目录只展示 h2/h3
+    const match = line.match(/^(#{1,6})\s+(.+)$/)
     if (match) {
       const level = match[1].length
-      const text = match[2].trim()
-      const id = text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-')
-      headings.push({ id, text, level })
+      const text = inlineMarkdownToText(match[2])
+      const id = slugger.slug(text)
+      if (level === 2 || level === 3) {
+        headings.push({ id, text, level })
+      }
     }
   })
 
@@ -92,19 +126,11 @@ function generateArticleJsonLd(post: typeof allPosts[0]) {
   return JSON.stringify(data)
 }
 
-const categoryLabels: Record<string, string> = {
-  'travel-guide': '旅居指南',
-  'remote-work': '远程工作',
-  'income-report': '收入报告',
-  'gear': '装备清单',
-  'photography': '摄影',
-}
-
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params
   const post = allPosts.find((p) => p.slug === slug)
 
-  if (!post) {
+  if (!post || post.isDraft) {
     notFound()
   }
 
@@ -125,7 +151,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <header className="mb-10 text-center">
               <div className="flex items-center justify-center gap-4 text-sm text-gray-500 mb-4">
                 <span className="text-blue-600 font-medium">
-                  {categoryLabels[post.category] || post.category}
+                  {getCategoryLabel(post.category)}
                 </span>
                 <span className="flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
@@ -155,7 +181,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             {/* Content */}
             <div className="prose prose-lg max-w-none">
               <div className="drop-cap">
-                <MDXContentWrapper code={post.body.code} />
+                <MDXContent code={post.body.code} components={mdxComponents} />
               </div>
             </div>
           </div>

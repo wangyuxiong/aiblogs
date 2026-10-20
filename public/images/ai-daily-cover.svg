@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="55%" style="stop-color:#1e293b"/>
+      <stop offset="100%" style="stop-color:#312e81"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+
+  <!-- Grid -->
+  <g opacity="0.05" stroke="white" stroke-width="1">
+    <line x1="0" y1="0" x2="0" y2="1000"/>
+    <line x1="200" y1="0" x2="200" y2="1000"/>
+    <line x1="400" y1="0" x2="400" y2="1000"/>
+    <line x1="600" y1="0" x2="600" y2="1000"/>
+    <line x1="800" y1="0" x2="800" y2="1000"/>
+    <line x1="1000" y1="0" x2="1000" y2="1000"/>
+    <line x1="1200" y1="0" x2="1200" y2="1000"/>
+    <line x1="1400" y1="0" x2="1400" y2="1000"/>
+    <line x1="1600" y1="0" x2="1600" y2="1000"/>
+    <line x1="0" y1="125" x2="1600" y2="125"/>
+    <line x1="0" y1="250" x2="1600" y2="250"/>
+    <line x1="0" y1="375" x2="1600" y2="375"/>
+    <line x1="0" y1="500" x2="1600" y2="500"/>
+    <line x1="0" y1="625" x2="1600" y2="625"/>
+    <line x1="0" y1="750" x2="1600" y2="750"/>
+    <line x1="0" y1="875" x2="1600" y2="875"/>
+    <line x1="0" y1="1000" x2="1600" y2="1000"/>
+  </g>
+
+  <!-- Glow -->
+  <circle cx="1250" cy="300" r="380" fill="#3b82f6" opacity="0.12"/>
+  <circle cx="400" cy="800" r="340" fill="#8b5cf6" opacity="0.1"/>
+
+  <!-- Top badge -->
+  <rect x="640" y="150" width="320" height="56" rx="28" fill="none" stroke="url(#accent)" stroke-width="2"/>
+  <text x="800" y="187" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="24" fill="#93c5fd" font-weight="500">每日更新 · DAILY</text>
+
+  <!-- Main title -->
+  <text x="800" y="430" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="150" font-weight="800" fill="#ffffff">AI 学习日刊</text>
+
+  <!-- Divider -->
+  <rect x="560" y="500" width="480" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- Subtitle -->
+  <text x="800" y="580" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="34" fill="#cbd5e1">模型发布 · Agent 工具 · 研究进展 · 行业动态</text>
+
+  <!-- Bottom brand -->
+  <text x="800" y="800" text-anchor="middle" font-family="-apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif" font-size="30" fill="#94a3b8" letter-spacing="4">MIND KEEPER</text>
+</svg>

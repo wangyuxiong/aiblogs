@@ -35,7 +35,7 @@ import socket
 socket.setdefaulttimeout(15)
 
 # 配置
-BLOG_DIR = Path(os.path.expanduser("~/workspace/aiblogs"))
+BLOG_DIR = Path(__file__).resolve().parents[1]
 POSTS_DIR = BLOG_DIR / "content" / "blog"
 HISTORY_FILE = BLOG_DIR / "scripts" / ".ai-daily-history.json"
 
@@ -211,7 +211,7 @@ category: ai-daily
 tags: [{', '.join(sorted(all_tags))}]
 isDraft: false
 isFeatured: false
-coverImage: "/images/ai-daily-cover.png"
+coverImage: "/images/ai-daily-cover.svg"
 ---
 
 """

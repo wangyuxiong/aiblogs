@@ -1,32 +1,33 @@
 import { Metadata } from 'next'
-import { Github, Twitter, Linkedin, Mail, Code, Palette, Globe } from 'lucide-react'
+import { Github, Rss, Code, Palette, Globe, Bot } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: '关于我 | 数字游民生活志',
-  description: '一个选择用代码探索世界的开发者',
+  title: '关于我',
+  description: 'Mind Keeper 的主理人：一名全栈开发者与 AI 重度学习者',
+  alternates: {
+    canonical: '/about',
+  },
 }
 
 const skills = [
   { name: 'React / Next.js', level: 95, category: 'technical' },
   { name: 'TypeScript', level: 90, category: 'technical' },
   { name: 'Node.js', level: 85, category: 'technical' },
+  { name: 'AI 工作流 / Agent', level: 85, category: 'technical' },
   { name: '内容创作', level: 80, category: 'creative' },
   { name: 'SEO / 营销', level: 75, category: 'creative' },
-  { name: '英语', level: 90, category: 'language' },
 ]
 
 const gear = {
   hardware: [
-    { name: 'MacBook Pro 16" M3 Max', description: '主力开发机器，性能强劲' },
-    { name: 'Sony A7C', description: '轻便全画幅，旅行摄影首选' },
+    { name: 'MacBook Pro 16" M3 Max', description: '主力开发机器，跑本地模型也够用' },
     { name: 'AirPods Pro 2', description: '降噪神器，专注工作必备' },
-    { name: 'Peak Design 背包', description: '30L，完美装下所有装备' },
   ],
   software: [
-    { name: 'Obsidian', description: '知识管理和写作' },
-    { name: 'VS Code', description: '代码编辑器' },
+    { name: 'Obsidian', description: '知识管理和写作，本站文章的起点' },
+    { name: 'VS Code / Claude Code', description: '代码编辑与 AI 结对编程' },
+    { name: 'RSS 阅读器', description: '日刊的信息源都从这里聚合' },
     { name: 'Figma', description: 'UI 设计' },
-    { name: 'Notion', description: '项目管理和协作' },
   ],
 }
 
@@ -39,8 +40,9 @@ export default function AboutPage() {
           {/* Left: Photo */}
           <div className="lg:sticky lg:top-24 lg:self-start">
             <div className="aspect-[3/4] bg-gray-200 rounded-2xl overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
-                <span className="text-gray-500">照片占位符</span>
+              <div className="w-full h-full bg-gradient-to-br from-blue-100 via-indigo-100 to-blue-200 flex flex-col items-center justify-center gap-3">
+                <Bot className="w-16 h-16 text-blue-500" />
+                <span className="text-gray-500 text-sm">Mind Keeper</span>
               </div>
             </div>
           </div>
@@ -52,22 +54,23 @@ export default function AboutPage() {
               className="text-3xl sm:text-4xl font-serif font-bold mb-6"
               style={{ fontFamily: 'var(--font-playfair)' }}
             >
-              你好，我是数字游民
+              你好，我是 Mind Keeper 的主理人
             </h1>
 
             {/* Bio */}
             <div className="prose prose-lg text-gray-700 mb-12">
               <p>
-                三年前，我还是一名普通的上班族。每天挤地铁、打卡、坐在固定的工位上。
-                那时的我从未想过，有一天我可以在世界的各个角落写代码。
+                我是一名全栈开发者，也是 AI 重度学习者。每天打开 RSS
+                阅读器跟踪几十个信息源，是我这几年坚持最久的习惯。
               </p>
               <p>
-                现在，我是一名远程工作的全栈开发者，也是这个数字游民博客的作者。
-                我相信代码可以构建生活，而生活也可以滋养代码。
+                AI 领域的信息洪流太大、太碎：模型发布、Agent 工具、开源项目、
+                研究论文、行业八卦……大部分信息其实并不值得你花时间。
               </p>
               <p>
-                通过这个博客，我希望记录真实的旅居数据与心路历程，
-                分享远程工作的专业技能与全球生活方式。
+                于是有了 Mind Keeper 这个 AI 学习日刊：每天把值得关注的动态
+                筛选、分类、浓缩成一篇文章，帮你（也帮我自己）用最短的时间
+                跟上行业的脚步。这里也会不定期分享一些 AI 编程实践与深度解析。
               </p>
             </div>
 
@@ -99,7 +102,7 @@ export default function AboutPage() {
             <section className="mb-12">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <Palette className="w-5 h-5" />
-                装备清单
+                工具清单
               </h2>
 
               {/* Hardware */}
@@ -141,32 +144,20 @@ export default function AboutPage() {
               </h2>
               <div className="flex gap-4">
                 <a
-                  href="#"
-                  className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                  aria-label="Twitter"
-                >
-                  <Twitter className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
+                  href="https://github.com/wangyuxiong"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
                   aria-label="GitHub"
                 >
                   <Github className="w-5 h-5" />
                 </a>
                 <a
-                  href="#"
+                  href="/feed.xml"
                   className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                  aria-label="LinkedIn"
+                  aria-label="RSS 订阅"
                 >
-                  <Linkedin className="w-5 h-5" />
-                </a>
-                <a
-                  href="mailto:hello@example.com"
-                  className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                  aria-label="Email"
-                >
-                  <Mail className="w-5 h-5" />
+                  <Rss className="w-5 h-5" />
                 </a>
               </div>
             </section>

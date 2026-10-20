@@ -1,23 +1,14 @@
 import { allPosts } from 'contentlayer/generated'
-import { PostCard } from '@/components/content/post-card'
+import { BlogListing } from '@/components/content/blog-listing'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: '博客 | Mind Keeper',
-  description: 'AI 编程、多智能体架构、开发者工具深度解析',
+  title: '日志归档',
+  description: 'AI 学习日刊与 AI 技术深度文章的完整归档',
+  alternates: {
+    canonical: '/blog',
+  },
 }
-
-const categories = [
-  { id: 'all', label: '全部' },
-  { id: 'ai-daily', label: '日刊' },
-  { id: 'ai-news', label: 'AI新闻' },
-  { id: 'ai-tutorial', label: 'AI教程' },
-  { id: 'travel-guide', label: '旅居指南' },
-  { id: 'remote-work', label: '远程工作' },
-  { id: 'income-report', label: '收入报告' },
-  { id: 'gear', label: '装备清单' },
-  { id: 'photography', label: '摄影' },
-]
 
 export default function BlogPage() {
   const posts = allPosts
@@ -36,47 +27,22 @@ export default function BlogPage() {
             日志归档
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            记录真实的旅居数据与心路历程，分享远程工作的专业技能与全球生活方式
+            AI 学习日刊每日更新，深度文章记录技术实践与行业观察
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              className="px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200"
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Posts Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {posts.map((post) => (
-            <PostCard
-              key={post.slug}
-              post={{
-                slug: post.slug,
-                title: post.title,
-                excerpt: post.excerpt,
-                date: post.date,
-                category: post.category,
-                location: post.location,
-                coverImage: post.coverImage,
-                readingTime: post.readingTime,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {posts.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-gray-500">暂无文章</p>
-          </div>
-        )}
+        <BlogListing
+          posts={posts.map((post) => ({
+            slug: post.slug,
+            title: post.title,
+            excerpt: post.excerpt,
+            date: post.date,
+            category: post.category,
+            location: post.location,
+            coverImage: post.coverImage,
+            readingTime: post.readingTime,
+          }))}
+        />
       </div>
     </div>
   )

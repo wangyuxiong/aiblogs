@@ -28,7 +28,7 @@ except ImportError:
     sys.exit(1)
 
 # 配置
-BLOG_DIR = Path(os.path.expanduser("~/workspace/aiblogs"))
+BLOG_DIR = Path(__file__).resolve().parents[1]
 DRAFTS_DIR = BLOG_DIR / "content" / "_drafts" / "news"
 HISTORY_FILE = BLOG_DIR / "scripts" / ".news-history.json"
 
