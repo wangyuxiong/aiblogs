@@ -1,53 +1,27 @@
 ---
 title: "AI 学习日刊 · 2026-10-21"
-excerpt: "今日 16 条技术与产品动态：fal 发布 FLUX 3 Max，图生视频 Elo 达 1139 并列第一；DeepSeek-V4.1-Flash-20261017 (Max) 登顶 Agent Arena 开源模型第一；OpenAI 发布 GPT-6 系列模型，提升 COBOL 等低资源编程语言…"
+excerpt: "今日 12 条技术与产品动态：OpenAI API 支持 12 小时 prompt 缓存，Codex 与 Work 用户缓存永久保留；Perplexity Computer 现可在 Mac 上完全本地运行，无需云端推理；Google 与 Meta 发布 TorchTPU：PyTorch 原生 TP…"
 date: "2026-10-21"
 category: ai-daily
-tags: ["AI日报", "AI动态", "技术与产品", "模型与技术", "产品与工具", "研究进展", "实用技巧"]
+tags: ["AI日报", "AI动态", "技术与产品", "产品与工具", "研究进展", "实用技巧"]
 coverImage: "/images/ai-daily-cover.svg"
 isDraft: false
 isFeatured: false
 ---
 
-> 今日聚焦：fal 发布 FLUX 3 Max，图生视频 Elo 达 1139 并列第一；DeepSeek-V4.1-Flash-20261017 (Max) 登顶 Agent Arena 开源模型第一。
+> 今日聚焦：OpenAI API 支持 12 小时 prompt 缓存，Codex 与 Work 用户缓存永久保留；Perplexity Computer 现可在 Mac 上完全本地运行，无需云端推理。
 
 ---
 
-## 模型与技术
-
-### [fal 发布 FLUX 3 Max，图生视频 Elo 达 1139 并列第一](<https://x.com/fal/status/2112600472922333263>)
-
-- **来源**：X：fal (@fal)
-- **发布**：10-21 01:42（北京时间）
-- **摘要**：fal 发布与 Black Forest Labs 合作后训练的视频模型 FLUX 3 Max，在第三方独立人类偏好评测中获 1139 Elo，与 Seedance 2.5 并列图生视频质量第一梯队。该模型约 12 秒生成一段 10 秒 720/768p 视频，未来三周降价 75%，后续还将继续后训练改进。
-- **推荐理由**：原文给出第三方 Elo 分数和生成速度数据，读者可据此判断该模型在图生视频梯队中的位置。
-- **收录**：[AIHOT 条目](<https://aihot.news/items/h3p20nlx7t5fr27k4viwlnpty>)
-
-### [DeepSeek-V4.1-Flash-20261017 (Max) 登顶 Agent Arena 开源模型第一](<https://x.com/arena/status/2112247114944360666>)
-
-- **来源**：X：Arena (@arena)
-- **发布**：10-20 02:18（北京时间）
-- **摘要**：Arena 宣布 DeepSeek-V4.1-Flash-20261017 (Max) 成为 Agent Arena 第一开源模型，总排名第 11，基于超 7.5K 真实会话净提升 +5.1%。其中位任务成本 $0.20，约为 GPT-6.1 Sol 提升幅度的 37%、成本的 27%；Confirmed Success 提升 +11.5%，且无 Tool Hallucination 问题。
-- **推荐理由**：Arena 用 7.5K 真实会话的数据说明该模型以约 27% 的成本拿下开源第一，读者可据此权衡 Agent 场景的性价比。
-- **收录**：[AIHOT 条目](<https://aihot.news/items/h6okcjroca6s95iemyh7dhpcm>)
-
-### [OpenAI 发布 GPT-6 系列模型，提升 COBOL 等低资源编程语言编码能力](<https://openai.com/index/low-resource-programming-languages>)
-
-- **来源**：OpenAI：官网动态（RSS · 排除企业/客户案例）
-- **发布**：10-19 20:00（北京时间）
-- **摘要**：OpenAI 宣布最新模型在 COBOL、Fortran、Visual Basic 等低资源编程语言上能力显著提升，并推出两项自建评测。
-- **推荐理由**：原文给出低资源语言的两套自建评测和逐语言数据，读者可据此评估新模型在遗留系统维护与迁移上的可用性。
-- **收录**：[AIHOT 条目](<https://aihot.news/items/tzuiybo7a45sm87wj4rec2mvo>)
-
-### [Inception Labs 发布扩散大语言模型 Mercury 3，速度达 1068 tokens/秒](<https://www.inceptionlabs.ai/blog/introducing-mercury-3>)
-
-- **来源**：Inception Labs：Blog（网页）
-- **发布**：10-19 15:00（北京时间）
-- **摘要**：Inception Labs 发布扩散式大语言模型 Mercury 3，称其在多项基准上超过 GPT-6 Luna 和 Claude Haiku 5.5，速度达 1068 tokens/秒，参数量较 Mercury 1 扩大 40 倍以上。
-- **推荐理由**：官方发布给出扩散模型规模化的关键数据，包括速度、上下文和价格，可用作评估实时 AI 应用选型的参考。
-- **收录**：[AIHOT 条目](<https://aihot.news/items/osk3jj5jltogwr6zpo09w80j8>)
-
 ## 产品与工具
+
+### [OpenAI API 支持 12 小时 prompt 缓存，Codex 与 Work 用户缓存永久保留](<https://x.com/thsottiaux/status/2112712984644784534>)
+
+- **来源**：X：Tibo (@thsottiaux)
+- **发布**：10-21 09:10（北京时间）
+- **摘要**：OpenAI 开发者账号宣布 API 现已可选 12 小时 prompt 缓存，持续运行的智能体可在请求间隔数小时的情况下继续以更低的缓存输入费率复用指令、工具和上下文。Tibo 补充称，Codex 与 Work 中已登录用户的缓存会永久保留，返回旧对话或数小时后恢复会话保证命中缓存，且无额外惩罚。
+- **推荐理由**：作者亲述 API 12 小时缓存与 Codex、Work 侧持久缓存策略，可直接判断对长时间运行 Agent 成本和体验的影响。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/gf3h1rt1vsjw3dnw4hxlie3fv>)
 
 ### [Perplexity Computer 现可在 Mac 上完全本地运行，无需云端推理](<https://x.com/AravSrinivas/status/2112583333825950207>)
 
@@ -88,14 +62,6 @@ isFeatured: false
 - **摘要**：Databricks 介绍 MemCurrent，一种面向生产 Agent 的持久记忆架构，结合情景记忆与派生记忆，通过插件、工具调用和离线 dreaming 管线三种访问模式读写与整合记忆，已用于 Agent Bricks Memory 和 Genie。
 - **推荐理由**：原文给出完整设计、消融和成本数据，读者可以据此评估生产级 Agent 记忆架构的选型与收益。
 - **收录**：[AIHOT 条目](<https://aihot.news/items/v26pyuir21k0m4r02acyz6v4g>)
-
-### [Google 发布 vLLM 与 SGLang 的 TorchTPU 原生推理引擎](<https://developers.googleblog.com/announcing-new-vllm-and-sglang-inference-engines-on-tpu/>)
-
-- **来源**：Google Developers Blog（RSS）
-- **发布**：10-20 00:00（北京时间）
-- **摘要**：Google 在 PyTorch 相关公告中推出基于 TorchTPU 的 vLLM 和 SGLang 原生 PyTorch 推理引擎，分别与 Inferact、RadixArk 合作开发，让开发者用熟悉的 PyTorch 工具在 TPU 上部署模型。
-- **推荐理由**：原文给出两套 PyTorch 原生 TPU 推理引擎的功能清单、公开基准成本和开源入口，读者可据此评估把现有 PyTorch 服务栈迁到 TPU 的可行性。
-- **收录**：[AIHOT 条目](<https://aihot.news/items/mlusnw9gi199uld4ixj58m2cz>)
 
 ## 研究进展
 
@@ -155,7 +121,7 @@ isFeatured: false
 
 **AI 学习日刊**每天从公开信息中筛选 AI 技术与产品动态，按主题整理，帮助你用最短时间了解行业前沿。
 
-**数据来源**：[AIHOT](https://aihot.news) 公开 API（匿名只读），本期收录 16 条。标题与摘要来自第三方信源，请以原文为准。
+**数据来源**：[AIHOT](https://aihot.news) 公开 API（匿名只读），本期收录 12 条。标题与摘要来自第三方信源，请以原文为准。
 
 - 🌐 网站：https://mind-keeper.com/daily
 - 📡 RSS：https://mind-keeper.com/feed.xml
