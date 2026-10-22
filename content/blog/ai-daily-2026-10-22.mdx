@@ -1,0 +1,83 @@
+---
+title: "AI 学习日刊 · 2026-10-22"
+excerpt: "今日 6 条技术与产品动态：OpenAI 发布 Codex 技能帮助网站自查 PHP 关键漏洞影响；Anthropic 开启 Claude Duet 研究预览，Claude 以主动式智能体接管日常工作；蚂蚁集团与 vLLM 社区开源量化推理内核库 Humming。"
+date: "2026-10-22"
+category: ai-daily
+tags: ["AI日报", "AI动态", "技术与产品", "产品与工具", "研究进展"]
+coverImage: "/images/ai-daily-cover.svg"
+isDraft: false
+isFeatured: false
+---
+
+> 今日聚焦：OpenAI 发布 Codex 技能帮助网站自查 PHP 关键漏洞影响；Anthropic 开启 Claude Duet 研究预览，Claude 以主动式智能体接管日常工作。
+
+---
+
+## 产品与工具
+
+### [OpenAI 发布 Codex 技能帮助网站自查 PHP 关键漏洞影响](<https://x.com/OpenAI/status/2112945805686604033>)
+
+- **来源**：X：OpenAI (@OpenAI)
+- **发布**：10-22 00:35（北京时间）
+- **摘要**：OpenAI 为 PHP 关键漏洞提供 Codex 技能，引导用户运行 github.com/openai/php2shell-checker 仓库自查网站是否受影响。背景是其 Patch the Planet 计划中 OpenAI 模型帮助研究员发现 PHP 关键缺陷，修复涉及 PHP 引擎大改，经约两个月协调后披露，使用 PHP 的网站可升级版本并应用安全厂商的缓解措施。
+- **推荐理由**：原文提供官方 Codex 技能和检测仓库，网站运营者可以据此自查 PHP 漏洞影响。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/b31hjqo2l088vfydp5gcdyv8p>)
+
+### [Anthropic 开启 Claude Duet 研究预览，Claude 以主动式智能体接管日常工作](<https://claude.com/blog/claude-duet>)
+
+- **来源**：Claude：Blog（网页）
+- **发布**：10-21 08:00（北京时间）
+- **摘要**：Anthropic 开启 Claude Duet 研究预览，一款让 Claude 作为主动式智能体工作的独立应用，已登陆 iOS、Android 和 claude.ai，面向美国 Pro 和 Max 用户开放候补名单。
+- **推荐理由**：原文给出 Claude Duet 的运行机制、安全设计和使用限制，读者可以据此判断这款主动式智能体是否值得加入工作流。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/jgg0i29t3o1eycc24c3wev0fx>)
+
+### [蚂蚁集团与 vLLM 社区开源量化推理内核库 Humming](<https://vllm.ai/blog/2026-10-21-humming>)
+
+- **来源**：vLLM 官方博客（RSS）
+- **发布**：10-21 08:00（北京时间）
+- **摘要**：蚂蚁集团与 vLLM 社区开源通用高性能量化推理内核库 Humming，仓库为 github.com/vllm-project/humming。
+- **推荐理由**：原文给出统一量化表示加 JIT 编译的内核设计和多项基准数字，读者可以据此评估不同 GPU 上的量化推理方案选择。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/afv7us0zbvzo789rghqkfhq5q>)
+
+## 研究进展
+
+### [Microsoft Research 与合作者证明 31 年历史的 KLS 猜想](<https://www.microsoft.com/en-us/research/blog/solving-a-31-year-old-grand-challenge-in-mathematics-the-kls-conjecture/>)
+
+- **来源**：Microsoft Research 博客（RSS）
+- **发布**：10-22 00:00（北京时间）
+- **摘要**：Microsoft Research 的 Xinzhi Zhang 与 Zhao Song 证明 1995 年提出的 Kannan–Lovász–Simonovits（KLS）猜想，表明对数凹分布的最优平面切割与任意形状切割的差距不随维度增长，以普适常数为界。
+- **推荐理由**：微软研究员亲述证明过程，展示了人类引导多智能体迭代剪枝的科研协作方式，约百条研究路径中筛出关键判据。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/y1fd2c0s3ydociygdah7apvme>)
+
+### [Wiz Research 披露 PHP2Shell：AI 助攻 PHP 核心 RCE 漏洞，影响全球 70% 网站](<https://www.wiz.io/blog/php2shell-php-rce>)
+
+- **来源**：Wiz：Research（安全研究）
+- **发布**：10-21 21:30（北京时间）
+- **摘要**：Wiz Research 披露 PHP 核心中的多个内存安全漏洞（CVE-2026-109618/109619，CVSS 最高 9.2），实现无需认证的远程代码执行与内存泄露，影响至少追溯到 PHP 5.4 的近十年版本。
+- **推荐理由**：Wiz 以亲历视角展示 AI 如何把隐藏十余年的 PHP 内存漏洞变成可用利用链，并给出可迁移的检测信号和修复建议。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/z9nqeyi6p0br6knhkrt3xd3n6>)
+
+### [OpenAI 与 PerturbAI、Scripps Research 用数千个 GPT‑Rosalind 智能体 32 分钟挖掘脑细胞数据新研究线索](<https://openai.com/index/scaling-ai-research-for-complex-biological-data>)
+
+- **来源**：OpenAI：官网动态（RSS · 排除企业/客户案例）
+- **发布**：10-21 12:50（北京时间）
+- **摘要**：OpenAI、PerturbAI 与 Scripps Research 联合发布研究，用数千个由 GPT‑Rosalind 驱动的 AI 智能体并行分析数百万小鼠脑细胞的全脑 CRISPR atlas，32 分钟内完成分析与文献解读，并称人工逐一分析需数月至一年。
+- **推荐理由**：原文给出分布式智能体分析全脑 CRISPR atlas 的具体做法与对比数据，读者可了解该方法的实际效果与局限。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/indtvl01y865vrsp81h64q7j4>)
+
+---
+
+## 📌 关于 AI 学习日刊
+
+**AI 学习日刊**每天从公开信息中筛选 AI 技术与产品动态，按主题整理，帮助你用最短时间了解行业前沿。
+
+**数据来源**：[AIHOT](https://aihot.news) 公开 API（匿名只读），本期收录 6 条。标题与摘要来自第三方信源，请以原文为准。
+
+- 🌐 网站：https://mind-keeper.com/daily
+- 📡 RSS：https://mind-keeper.com/feed.xml
+
+---
+
+*本文由脚本自动抓取整理，如有疏漏欢迎指正。*
+
+{/* generated-by: scripts/aihot-daily.py */}
