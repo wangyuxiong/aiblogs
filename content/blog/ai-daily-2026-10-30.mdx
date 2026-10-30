@@ -1,0 +1,151 @@
+---
+title: "AI 学习日刊 · 2026-10-30"
+excerpt: "今日 14 条技术与产品动态：Pika 基于MiniMax H3后训练并开源 Pika H3 Flex 视频生成模型；Mistral Large 4（Le Chonk）登陆 Hugging Face：1T 参数 MoE 多模态开源权重模型；腾讯混元发布 Hy-Nomas 技术报告并开源 Hy-No…"
+date: "2026-10-30"
+category: ai-daily
+tags: ["AI日报", "AI动态", "技术与产品", "模型与技术", "产品与工具", "研究进展", "实用技巧"]
+coverImage: "/images/ai-daily-cover.svg"
+isDraft: false
+isFeatured: false
+---
+
+> 今日聚焦：Pika 基于MiniMax H3后训练并开源 Pika H3 Flex 视频生成模型；Mistral Large 4（Le Chonk）登陆 Hugging Face：1T 参数 MoE 多模态开源权重模型。
+
+---
+
+## 模型与技术
+
+### [Pika 基于MiniMax H3后训练并开源 Pika H3 Flex 视频生成模型](<https://x.com/Khazix0918/status/2115898252004622617>)
+
+- **来源**：X：卡兹克 (@Khazix0918)
+- **发布**：10-30 04:07（北京时间）
+- **摘要**：Pika Labs 在 MiniMax H3 上做后训练，推出并开源 Pika H3 Flex，采样步数从 50 步压缩到 6 步，生成时间大幅降低且质量有所提升。
+- **推荐理由**：原文点出采样步数从50步压到6步且开源，本地视频生成玩家可据此评估实际收益。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/eq47lph0rzobf8cr950saiu8r>)
+
+### [Mistral Large 4（Le Chonk）登陆 Hugging Face：1T 参数 MoE 多模态开源权重模型](<https://huggingface.co/blog/mistral-large4>)
+
+- **来源**：Hugging Face 官方团队博客
+- **发布**：10-29 08:00（北京时间）
+- **摘要**：Hugging Face 发布 Mistral Large 4（Le Chonk）的上线博客，模型为多模态多语言 MoE 架构，总参数约 1T、激活 49B、上下文窗口 1M token。
+- **推荐理由**：原文给出架构细节、网络安全能力分数和各硬件实测吞吐，读者可据此评估该开源权重大模型的部署门槛与适用场景。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/upsd8u37hkkquohy3w3sjvszi>)
+
+## 产品与工具
+
+### [腾讯混元发布 Hy-Nomas 技术报告并开源 Hy-Nomas-Bench](<https://x.com/TencentHunyuan/status/2115851165904814283>)
+
+- **来源**：X：腾讯混元 (@TencentHunyuan)
+- **发布**：10-30 01:00（北京时间）
+- **摘要**：腾讯混元发布 Hy-Nomas 开源交互式视频世界模型的技术报告（arXiv:2610.36729），并开源 Hy-Nomas-Bench 数据集用于可复现研究。官方还用 Hy-Nomas 重现 Genie 4 示例并放出对比视频，演示无需排队即可试用，地址为 https://hy-nomas.hy.tencent.com/。
+- **推荐理由**：官方补充技术报告和 Hy-Nomas-Bench 数据集，还放出与 Genie 4 的对比视频，便于研究者复现和评估该视频世界模型。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/nb40aoihhydhoo0acp0rcyaol>)
+
+### [Codex 宣布即日起 Pro 及 Business Premium 各档位用量上限翻倍](<https://x.com/thsottiaux/status/2115850175868727621>)
+
+- **来源**：X：Tibo (@thsottiaux)
+- **发布**：10-30 00:56（北京时间）
+- **摘要**：Tibo 宣布即日起将 Pro 100/200/500 档位与 Business Premium 的所有用量上限翻倍。Pro 200 的上限不会下调，Work 与 Codex 用量保持不变；dots 的扩展用量上限继续提供，且仍与默认用量分开计算，后续还会通过更好的模型和效率改进提升实际可用量。
+- **推荐理由**：作者以官方身份宣布用量上限调整的具体方案，涉及多个订阅档位，使用者可据此核对自身配额变化。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/funx6p4g0gju509j6n0oyxmqu>)
+
+### [Gemini 新增文档、PDF、演示文稿和表格的直接生成、预览与编辑功能](<https://x.com/GeminiApp/status/2115845164824711247>)
+
+- **来源**：X：Gemini (@GeminiApp)
+- **发布**：10-30 00:36（北京时间）
+- **摘要**：Google Gemini 宣布可直接在应用内生成、预览和编辑文档、PDF、演示文稿、表格等多种文件。支持把手写笔记转成 PDF 学习指南、手动调整内容、高亮部分让 Gemini 修改文字或视觉元素，并可继续追问。
+- **推荐理由**：官方宣布文档、PDF、演示文稿等可直接在 Gemini 内生成、预览和编辑，读者可据此判断它能否替代部分办公工具流程。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/nfbnpnzdrebu4kbq6uqxhkc2h>)
+
+### [Unsloth 发布 Mistral Le Chonk 1-bit GGUF 量化版，可本地运行 1T 参数模型](<https://x.com/UnslothAI/status/2115812784189620265>)
+
+- **来源**：X：Unsloth (@UnslothAI)
+- **发布**：10-29 22:27（北京时间）
+- **摘要**：Unsloth 发布 Mistral Le Chonk（Mistral Large 4，1T 参数 MoE，52B 激活）的 Dynamic 1-bit GGUF，可在 Mac Studio 上本地运行，保留 91% top-1 准确率，体积约 233GB（较 1.1TB FP8 小 80%）。图为各量化档位给出硬件需求，1-bit 需 256-270GB 内存，最小 UD-IQ1\_S 约占 233GB 磁盘，并支持文本与图像输入、1M 上下文和 160+ 语言。GGUF 与指南见 huggingface.co/unsloth/Mistral-Large-4-1T-A52B-GGUF 和 unsloth.ai/docs/models/mistral-large-4。
+- **推荐理由**：原文给出在 Mac Studio 上本地运行 1T 参数模型的量化方案和硬件需求表，读者可直接照做部署。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/rph54wkrnzjpvov4cv0mxqatl>)
+
+### [Factory 发布 Droid 1.0，以程序化工具调用构建企业级 Agent harness](<https://factory.com/news/frontier-harness>)
+
+- **来源**：Factory 研究 / 产品（RSS）
+- **发布**：10-29 08:00（北京时间）
+- **摘要**：Factory 发布 Droid 1.0，一个模型无关的 agent harness，主打程序化工具调用（PTC），模型通过编写 JavaScript 程序在沙箱中一次执行数百个工具调用。
+- **推荐理由**：原文给出 Droid 1.0 的基准对比数据和程序化工具调用设计细节，读者可以据此评估这个 Agent harness 的成本与质量取舍。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/gjz7lj8j6ojjyj80vkkhy786v>)
+
+### [vLLM 发布 Mistral Large 4 Day 0 支持](<https://vllm.ai/blog/2026-10-29-mistral-large-4>)
+
+- **来源**：vLLM 官方博客（RSS）
+- **发布**：10-29 08:00（北京时间）
+- **摘要**：vLLM 团队宣布对 Mistral 新旗舰模型 Mistral Large 4 提供 Day 0 支持，该模型为 1T 参数、每 token 激活 49B 的原生多模态 MoE 模型，采用 MLA 稀疏注意力加 DSA top-k 索引器、跨层 KV 共享、NoPE、SSMax 和 LeRoPE 等新架构，并内置 DSpark 推测解码草稿器与 Pixtral 视觉编码器。
+- **推荐理由**：vLLM 团队详解支持 Mistral Large 4 所需的架构适配与量化、长上下文、推测解码等实测数据，可作部署参考。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/x6x8nkxn5mqc55umit3clj1tf>)
+
+## 研究进展
+
+### [Wiz 分析智能体攻击的七大指纹与发展趋势](<https://www.wiz.io/blog/the-rise-of-agentic-attacks-what-they-look-like-and-where-theyre-headed>)
+
+- **来源**：Wiz：Research（安全研究）
+- **发布**：10-29 22:36（北京时间）
+- **摘要**：Wiz 基于自身事件响应与公开披露案例，分析 AI 智能体参与真实入侵的现状与趋势，涉及 ARTEX、Hermes 等框架及韩国金融机构（约 67,000 人信息外泄）、泰国财政部、ConnectWise 供应链（尝试攻击超 2,250 个租户）等案例。
+- **推荐理由**：Wiz 结合自身三起案例与公开事件，提炼出七条可操作的智能体攻击指纹，对防御侧检测有直接参考价值。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/mdcygre4ettjdbca7sq6vu7zx>)
+
+### [OpenAI 详解如何检测前沿模型失准行为](<https://openai.com/index/how-we-detect-frontier-model-misalignment>)
+
+- **来源**：OpenAI：官网动态（RSS · 排除企业/客户案例）
+- **发布**：10-29 17:00（北京时间）
+- **摘要**：OpenAI 发布长文，详解其针对前沿模型失准行为的多层监测系统，包括激活探针、基于模型的审查、调查智能体和自动化调查四层架构，并对 GPT‑6 Astra 及以上模型的全部 RL 运行、评估和内部 Codex 流量进行监测。
+- **推荐理由**：原文详述了 OpenAI 多层失准监测系统的架构与真实响应案例，读者可以了解其覆盖范围、误报处理和独立红队测试结果。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/ck2bk0ns12i2hkg4ae0eoeabv>)
+
+### [Trakkr 研究：追踪 1285 条 AI 引用统计的溯源路径](<https://trakkr.ai/trakkr-research/zombie-stats>)
+
+- **来源**：Hacker News：AI 热帖
+- **发布**：10-28 16:00（北京时间）
+- **摘要**：Trakkr Research 向 ChatGPT、Perplexity、Gemini、Claude 和 Google AI Overviews 提出 200 个要求数字的问题，并追踪其中 1285 条统计的引用链路，结果只有 40% 到达说法一致的研究，8% 到达但数字或语境已变，40% 无法核查，11% 无处可溯。
+- **推荐理由**：Trakkr 追踪了 1285 条 AI 引用统计的溯源路径，给出各类引用页面的到达率和数字失真比例，可帮助读者判断 AI 数字引用的可靠程度。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/dmi67weoeety92021tvuyf1hs>)
+
+## 实用技巧
+
+### [OpenRouter 实测 Claude Opus vs Sonnet vs Haiku 5.5 该选哪个](<https://openrouter.ai/blog/insights/claude-opus-vs-sonnet-vs-haiku/>)
+
+- **来源**：OpenRouter：Announcements（RSS）
+- **发布**：10-30 08:00（北京时间）
+- **摘要**：OpenRouter 实测 Claude Opus 5.5、Sonnet 5.5 与 Haiku 5.5 三档模型，建议默认用 Sonnet 5.5，高频与子智能体任务用 Haiku 5.5，长且容错成本高的任务用 Opus 5.5。
+- **推荐理由**：原文用同一批编码与基准任务实测三档模型，给出按工作负载选型的成本与可靠性结论。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/gzcwy89nkjreenv5eu1qaysdi>)
+
+### [Figma 讲解如何训练专用画布编辑模型](<https://www.figma.com/blog/training-a-figma-fluent-editing-model/>)
+
+- **来源**：Figma AI / Agent / Make
+- **发布**：10-30 05:00（北京时间）
+- **摘要**：Figma 介绍其为 agent 自研 Figma 编辑模型的训练方法，先用超过 25 万条合成样本做 SFT，让早期 Llama 3.3 70B 在编辑任务上接近当时顶级模型，后转向 RL 并结合确定性校验器与视觉评委做评测。
+- **推荐理由**：原文拆解了 Figma 自研编辑模型从 SFT 到 RL 的训练路径与内部评测维度，可作专业领域后训练的参考方法。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/z9kqlhsgiz11fvlk3aodm6seg>)
+
+### [Addy Osmani 谈你可能对 Claude 过度提示了](<https://x.com/addyosmani/status/2115688494865465370>)
+
+- **来源**：X：Addy Osmani (@addyosmani)
+- **发布**：10-29 14:13（北京时间）
+- **摘要**：Addy Osmani 撰文称新版 Claude 模型所需提示词比多数人习惯的更少，针对 Opus 5.5 建议用单一明确目标加验证条件让 Claude 自主工作，从 /effort medium 起步按需调整。
+- **推荐理由**：作者基于 Claude Code 团队实践给出减提示词的具体做法，包括 /doctor 审计、subagent 使用边界和 Projects 并行管理。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/m1cx9dfhpep0da323x3tk7vht>)
+
+---
+
+## 📌 关于 AI 学习日刊
+
+**AI 学习日刊**每天从公开信息中筛选 AI 技术与产品动态，按主题整理，帮助你用最短时间了解行业前沿。
+
+**数据来源**：[AIHOT](https://aihot.news) 公开 API（匿名只读），本期收录 14 条。标题与摘要来自第三方信源，请以原文为准。
+
+- 🌐 网站：https://mind-keeper.com/daily
+- 📡 RSS：https://mind-keeper.com/feed.xml
+
+---
+
+*本文由脚本自动抓取整理，如有疏漏欢迎指正。*
+
+{/* generated-by: scripts/aihot-daily.py */}
