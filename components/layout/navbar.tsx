@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
@@ -104,19 +103,17 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Keep the closed menu hidden and unfocusable while retaining exit transitions. */}
-      <motion.nav
+      {/* Keep visibility synchronous with accessibility state, even when animation frames are paused. */}
+      <nav
         id="mobile-navigation"
         aria-label="移动端导航"
         aria-hidden={!isMobileMenuOpen}
         inert={!isMobileMenuOpen}
-        initial={false}
-        animate={{
+        style={{
           height: isMobileMenuOpen ? 'auto' : 0,
           opacity: isMobileMenuOpen ? 1 : 0,
           visibility: isMobileMenuOpen ? 'visible' : 'hidden',
         }}
-        transition={{ duration: 0.2 }}
         className="md:hidden overflow-hidden bg-white border-b border-gray-100"
       >
         <div className="px-4 py-4 space-y-3">
@@ -140,7 +137,7 @@ export function Navbar() {
             )
           })}
         </div>
-      </motion.nav>
+      </nav>
     </header>
   )
 }
