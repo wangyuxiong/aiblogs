@@ -1,8 +1,8 @@
-import { Metadata } from 'next'
+import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: '作品集',
-  description: '我构建的数字产品：AI 写作导师「文心启航」等',
+  title: '项目',
+  description: '文心启航 AI 写作教练与 Mind Keeper 日报系统的问题背景、实现方式、当前状态与可验证链接。',
   alternates: {
     canonical: '/portfolio',
   },
