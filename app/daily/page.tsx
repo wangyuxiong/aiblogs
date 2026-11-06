@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/daily',
   },
+  openGraph: {
+    url: '/daily',
+  },
 }
 
 export default function DailyPage() {

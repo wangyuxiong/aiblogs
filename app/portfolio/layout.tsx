@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/portfolio',
   },
+  openGraph: {
+    url: '/portfolio',
+  },
 }
 
 export default function PortfolioLayout({ children }: { children: React.ReactNode }) {

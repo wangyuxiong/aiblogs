@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/portfolio/writing-coach',
   },
+  openGraph: {
+    url: '/portfolio/writing-coach',
+  },
 }
 
 export default function WritingCoachLayout({ children }: { children: React.ReactNode }) {

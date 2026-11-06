@@ -36,6 +36,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       title: post.title,
       description: post.excerpt,
       type: 'article',
+      url: `/blog/${post.slug}`,
       publishedTime: post.date,
       authors: ['Mind Keeper'],
       images: post.coverImage

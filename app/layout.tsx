@@ -19,9 +19,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: '/',
-    types: {
-      'application/rss+xml': site.rss,
-    },
   },
   openGraph: {
     type: 'website',
@@ -58,6 +55,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
+      <head>
+        <link rel="alternate" type="application/rss+xml" href={site.rss} />
+      </head>
       <body className="min-h-screen antialiased font-sans">
         <a
           href="#main-content"

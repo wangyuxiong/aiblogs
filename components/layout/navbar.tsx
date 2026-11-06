@@ -14,6 +14,23 @@ const navLinks = [
   { href: '/about', label: '关于' },
 ]
 
+const dailyArticlePrefixes = ['/blog/ai-daily-', '/blog/ai-hot-daily-']
+
+function isNavLinkActive(pathname: string, href: string) {
+  const isCurrentSection = pathname === href || pathname.startsWith(`${href}/`)
+  const isDailyArticle = dailyArticlePrefixes.some((prefix) =>
+    pathname.startsWith(prefix)
+  )
+
+  if (href === '/daily') {
+    return isCurrentSection || isDailyArticle
+  }
+  if (href === '/blog') {
+    return isCurrentSection && !isDailyArticle
+  }
+  return isCurrentSection
+}
+
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -50,8 +67,7 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <nav aria-label="主导航" className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => {
-              const isActive =
-                pathname === link.href || pathname.startsWith(`${link.href}/`)
+              const isActive = isNavLinkActive(pathname, link.href)
               return (
                 <Link
                   key={link.href}
@@ -105,8 +121,7 @@ export function Navbar() {
       >
         <div className="px-4 py-4 space-y-3">
           {navLinks.map((link) => {
-            const isActive =
-              pathname === link.href || pathname.startsWith(`${link.href}/`)
+            const isActive = isNavLinkActive(pathname, link.href)
             return (
               <Link
                 key={link.href}

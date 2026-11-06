@@ -24,6 +24,25 @@ HOMEPAGE_SECTION_IDS = (
 )
 LEARNING_PATH_TITLE = "AI Agent：从入门到做出第一个工具"
 PROJECT_NAMES = ("文心启航", "Mind Keeper 日报系统")
+REPRESENTATIVE_METADATA_PAGES = (
+    ("index", "https://mind-keeper.com"),
+    ("blog", "https://mind-keeper.com/blog"),
+    ("daily", "https://mind-keeper.com/daily"),
+    ("portfolio", "https://mind-keeper.com/portfolio"),
+    ("about", "https://mind-keeper.com/about"),
+    (
+        "portfolio/writing-coach",
+        "https://mind-keeper.com/portfolio/writing-coach",
+    ),
+    (
+        "blog/2026-05-07-anthropic-bugcrawl-deep-dive",
+        "https://mind-keeper.com/blog/2026-05-07-anthropic-bugcrawl-deep-dive",
+    ),
+    (
+        "blog/ai-daily-2026-11-05",
+        "https://mind-keeper.com/blog/ai-daily-2026-11-05",
+    ),
+)
 DAILY_PATH_PREFIXES = ("/blog/ai-daily-", "/blog/ai-hot-daily-")
 DAILY_DATE_RE = re.compile(
     r"^/blog/(?:ai-daily-|ai-hot-daily-)(\d{4}-\d{2}-\d{2})(?:/|$)"
@@ -269,6 +288,7 @@ class _ShellParser(HTMLParser):
         self.main_attributes = []
         self.meta_tags = []
         self.link_tags = []
+        self.buttons = []
         self._nav_stack = []
         self._anchor = None
         self._footer_depth = 0
@@ -285,6 +305,8 @@ class _ShellParser(HTMLParser):
             self.meta_tags.append(attrs)
         elif tag == "link":
             self.link_tags.append(attrs)
+        elif tag == "button":
+            self.buttons.append(attrs)
         elif tag == "footer":
             self._footer_depth += 1
 
@@ -509,6 +531,37 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
                     "Both navigation variants must use the global labels and order.",
                 )
 
+    def test_article_navigation_marks_the_content_section(self):
+        cases = (
+            ("blog/2026-05-07-anthropic-bugcrawl-deep-dive", "/blog"),
+            ("blog/ai-daily-2026-11-05", "/daily"),
+            ("blog/ai-hot-daily-2026-05-25", "/daily"),
+        )
+        for page_name, expected_href in cases:
+            shell = parse_shell(read_page(page_name))
+            navigations = [
+                navigation
+                for navigation in shell.navigations
+                if navigation["attributes"].get("aria-label")
+                in {"主导航", "移动端导航"}
+            ]
+            self.assertEqual(2, len(navigations))
+            for navigation in navigations:
+                with self.subTest(
+                    page=page_name,
+                    navigation=navigation["attributes"].get("aria-label"),
+                ):
+                    self.assertEqual(
+                        [expected_href],
+                        [
+                            link["attributes"].get("href")
+                            for link in navigation["links"]
+                            if "aria-current" in link["attributes"]
+                        ],
+                        "Original articles must mark /blog active; both daily slug "
+                        "families must mark /daily active instead.",
+                    )
+
     def test_keyboard_skip_link_targets_main_content(self):
         shell = parse_shell(read_page("index"))
         skip_links = [link for link in shell.anchors if link["text"] == "跳到正文"]
@@ -528,6 +581,46 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
             [attributes.get("id") for attributes in shell.main_attributes],
             "The root layout must provide one main landmark targeted by the skip link.",
         )
+        self.assertEqual(
+            ["-1"],
+            [attributes.get("tabindex") for attributes in shell.main_attributes],
+            "The skip-link target must be programmatically focusable.",
+        )
+
+    def test_ssr_mobile_navigation_is_closed_and_toggle_targets_it(self):
+        shell = parse_shell(read_page("index"))
+        mobile_navigations = [
+            navigation
+            for navigation in shell.navigations
+            if navigation["attributes"].get("aria-label") == "移动端导航"
+        ]
+        self.assertEqual(1, len(mobile_navigations))
+        mobile_navigation = mobile_navigations[0]
+        navigation_attributes = mobile_navigation["attributes"]
+        self.assertEqual("true", navigation_attributes.get("aria-hidden"))
+        self.assertIn(
+            "inert",
+            navigation_attributes,
+            "The SSR-closed mobile navigation must be unfocusable without JavaScript.",
+        )
+
+        toggles = [
+            button
+            for button in shell.buttons
+            if button.get("aria-label") == "打开导航菜单"
+        ]
+        self.assertEqual(1, len(toggles))
+        toggle = toggles[0]
+        self.assertEqual("false", toggle.get("aria-expanded"))
+        controlled_id = toggle.get("aria-controls")
+        self.assertTrue(controlled_id, "The mobile menu toggle needs aria-controls.")
+        controlled_navigations = [
+            navigation
+            for navigation in shell.navigations
+            if navigation["attributes"].get("id") == controlled_id
+        ]
+        self.assertEqual(1, len(controlled_navigations))
+        self.assertIs(mobile_navigation, controlled_navigations[0])
 
     def test_global_metadata_uses_site_config_without_unverified_handles(self):
         homepage = read_page("index")
@@ -571,6 +664,46 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
         self.assertTrue(is_local_http_url(rss_url))
         self.assertEqual("/feed.xml", rss_url.path)
         self.assertTrue((DIST / "feed.xml").is_file(), "The advertised RSS feed must exist.")
+
+    def test_representative_pages_have_canonical_og_url(self):
+        for page_name, expected_canonical in REPRESENTATIVE_METADATA_PAGES:
+            with self.subTest(page=page_name):
+                shell = parse_shell(read_page(page_name))
+                canonical_urls = [
+                    attributes.get("href")
+                    for attributes in shell.link_tags
+                    if "canonical" in attributes.get("rel", "").lower().split()
+                ]
+                self.assertEqual([expected_canonical], canonical_urls)
+                og_urls = [
+                    attributes.get("content")
+                    for attributes in shell.meta_tags
+                    if attributes.get("property", "").lower() == "og:url"
+                ]
+                self.assertEqual(
+                    canonical_urls,
+                    og_urls,
+                    "Each page's og:url must equal its absolute canonical URL.",
+                )
+
+    def test_representative_pages_have_one_rss_alternate(self):
+        for page_name, _ in REPRESENTATIVE_METADATA_PAGES:
+            with self.subTest(page=page_name):
+                shell = parse_shell(read_page(page_name))
+                rss_links = [
+                    attributes.get("href")
+                    for attributes in shell.link_tags
+                    if "alternate" in attributes.get("rel", "").lower().split()
+                    and attributes.get("type") == "application/rss+xml"
+                ]
+                self.assertEqual(
+                    1,
+                    len(rss_links),
+                    "Every page must expose exactly one RSS alternate link.",
+                )
+                rss_url = split_url(rss_links[0])
+                self.assertTrue(is_local_http_url(rss_url))
+                self.assertEqual("/feed.xml", rss_url.path)
 
     def test_footer_brand_and_working_rss_github_links(self):
         shell = parse_shell(read_page("index"))

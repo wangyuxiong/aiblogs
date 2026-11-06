@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/about',
   },
+  openGraph: {
+    url: '/about',
+  },
 }
 
 const currentWork = [
