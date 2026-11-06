@@ -840,6 +840,20 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
         ]
         self.assertFalse(links, f"/blog must not link to the draft hello-world post: {links}")
 
+    def test_post_lists_preserve_iso_calendar_dates(self):
+        cases = (
+            ("blog", "2026年5月7日"),
+            ("daily", "2026年11月5日"),
+        )
+        for page_name, expected_date in cases:
+            with self.subTest(page=page_name, date=expected_date):
+                self.assertIn(
+                    expected_date,
+                    parse_page(page_name).compact_text,
+                    f"{page_name} must render the source ISO calendar date without "
+                    "shifting it to the local timezone's previous day.",
+                )
+
     def test_daily_still_contains_daily_links(self):
         self.assertTrue(
             dated_daily_links(parse_page("daily")),

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { PostListItem } from '@/components/content/blog-listing'
+import type { PostListItem } from '@/lib/posts'
 
 interface LatestDailyProps {
   posts: PostListItem[]

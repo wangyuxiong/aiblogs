@@ -1,5 +1,6 @@
 import { allPosts } from 'contentlayer/generated'
 import { getDailyPosts } from '@/lib/posts'
+import { formatDate } from '@/lib/utils'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -64,13 +65,7 @@ export default function DailyPage() {
                       {post.excerpt}
                     </p>
                     <div className="flex items-center gap-3 text-sm text-gray-500">
-                      <time dateTime={post.date}>
-                        {new Date(post.date).toLocaleDateString('zh-CN', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </time>
+                      <time dateTime={post.date}>{formatDate(post.date)}</time>
                       <span>•</span>
                       <span>{post.readingTime} 分钟阅读</span>
                       {post.tags && post.tags.length > 0 && (

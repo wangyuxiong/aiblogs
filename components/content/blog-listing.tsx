@@ -4,17 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PostCard } from '@/components/content/post-card'
 import { getCategoryLabel } from '@/lib/categories'
-
-export type PostListItem = {
-  slug: string
-  title: string
-  excerpt: string
-  date: string
-  category: string
-  location?: string
-  coverImage?: string
-  readingTime: number
-}
+import type { PostListItem } from '@/lib/posts'
 
 interface BlogListingProps {
   posts: PostListItem[]

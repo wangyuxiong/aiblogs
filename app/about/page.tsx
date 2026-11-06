@@ -113,10 +113,10 @@ export default function AboutPage() {
               </p>
               <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2">
                 <Link href="/blog" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#354b38] underline decoration-[#5d7059]/40 underline-offset-4 hover:decoration-current">
-                  阅读原创文章 →
+                  阅读原创文章 <span aria-hidden="true">→</span>
                 </Link>
                 <Link href="/portfolio" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#354b38] underline decoration-[#5d7059]/40 underline-offset-4 hover:decoration-current">
-                  查看项目 →
+                  查看项目 <span aria-hidden="true">→</span>
                 </Link>
               </div>
             </div>
@@ -126,7 +126,7 @@ export default function AboutPage() {
                 日报由自动化流程汇总内容并发布，调度可能延迟，以页面实际日期为准。原创教程与项目笔记则随实践持续整理。
               </p>
               <Link href="/daily" className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-[#354b38] underline decoration-[#5d7059]/40 underline-offset-4 hover:decoration-current">
-                查看日报 →
+                查看日报 <span aria-hidden="true">→</span>
               </Link>
             </div>
           </div>

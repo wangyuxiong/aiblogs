@@ -1,4 +1,4 @@
-export type PostLike = {
+export type PostListItem = {
   slug: string
   title: string
   excerpt: string
@@ -7,6 +7,9 @@ export type PostLike = {
   location?: string
   coverImage?: string
   readingTime: number
+}
+
+export type PostLike = PostListItem & {
   isDraft?: boolean
 }
 

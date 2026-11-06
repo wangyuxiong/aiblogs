@@ -1,20 +1,8 @@
-'use client'
-
 import { PostCard } from '@/components/content/post-card'
-
-type Post = {
-  slug: string
-  title: string
-  excerpt: string
-  date: string
-  category: string
-  location?: string
-  coverImage?: string
-  readingTime: number
-}
+import type { PostListItem } from '@/lib/posts'
 
 interface FeaturedPostsProps {
-  posts: Post[]
+  posts: PostListItem[]
   id?: string
   title?: string
   moreHref?: string
