@@ -1,0 +1,16 @@
+package.json
+  h_8e789064a132a5 13-14
+scripts/test-brand-site.py
+  h_8e789064a132a5 1-410
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0e03f1c038f0eb67741c3eabcb70da1e6617f67d",
+  "prompts": {},
+  "humans": {
+    "h_8e789064a132a5": {
+      "author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
