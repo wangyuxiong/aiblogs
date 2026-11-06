@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Static acceptance tests for the Mind Keeper personal brand site."""
 
+import datetime
 import re
 import tempfile
 import unittest
@@ -13,6 +14,16 @@ ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
 POSITIONING_TEXT = "AI 产品与工程实践"
 SITE_HOST = "mind-keeper.com"
+# External download links may be added only after live verification of the target.
+VERIFIED_EXTERNAL_DOWNLOADS = frozenset()
+HOMEPAGE_SECTION_IDS = (
+    "learning-path",
+    "projects",
+    "original-articles",
+    "latest-daily",
+)
+LEARNING_PATH_TITLE = "AI Agent：从入门到做出第一个工具"
+PROJECT_NAMES = ("文心启航", "Mind Keeper 日报系统")
 DAILY_PATH_PREFIX = "/blog/ai-daily-"
 DAILY_DATE_RE = re.compile(r"^/blog/ai-daily-(\d{4}-\d{2}-\d{2})(?:/|$)")
 LATEST_UPDATE_RE = re.compile(
@@ -40,25 +51,27 @@ def read_page(name):
     try:
         return path.read_text(encoding="utf-8")
     except FileNotFoundError:
+        try:
+            display_path = path.relative_to(ROOT)
+        except ValueError:
+            display_path = path
         raise AssertionError(
-            f"Missing generated page: {path.relative_to(ROOT)}. "
+            f"Missing generated page: {display_path}. "
             "Run 'pnpm build' before 'pnpm test:brand'."
         ) from None
 
 
 class _SectionParser(HTMLParser):
-    def __init__(self, html, start_id, end_id):
+    def __init__(self, html, start_id):
         super().__init__(convert_charrefs=True)
         self.html = html
         self.start_id = start_id
-        self.end_id = end_id
         self.line_offsets = [0]
         self.line_offsets.extend(match.end() for match in re.finditer("\n", html))
         self.start = None
         self.end = None
         self.root_tag = None
         self.depth = 0
-        self.found_end_id = False
 
     def current_offset(self):
         line, column = self.getpos()
@@ -78,37 +91,24 @@ class _SectionParser(HTMLParser):
         if self.end is not None:
             return
 
-        if self.end_id is not None:
-            if element_id == self.end_id:
-                self.end = offset
-                self.found_end_id = True
-        elif tag == self.root_tag:
+        if tag == self.root_tag:
             self.depth += 1
 
     def handle_endtag(self, tag):
-        if (
-            self.end_id is None
-            and self.start is not None
-            and self.end is None
-            and tag == self.root_tag
-        ):
+        if self.start is not None and self.end is None and tag == self.root_tag:
             self.depth -= 1
             if self.depth == 0:
                 self.end = self.current_offset()
 
 
-def section(html, start_id, end_id=None):
-    """Return HTML from an element id to its close or the next boundary id."""
-    parser = _SectionParser(html, start_id, end_id)
+def section(html, start_id):
+    """Return HTML through the matching close of the element with start_id."""
+    parser = _SectionParser(html, start_id)
     parser.feed(html)
     parser.close()
 
     if parser.start is None:
         raise AssertionError(f"Missing required section id={start_id!r}.")
-    if end_id is not None and not parser.found_end_id:
-        raise AssertionError(
-            f"Section id={start_id!r} has no following boundary id={end_id!r}."
-        )
     if parser.end is None:
         raise AssertionError(f"Section id={start_id!r} has no closing </{parser.root_tag}>.")
 
@@ -149,18 +149,39 @@ class _PageParser(HTMLParser):
             r"[_-]+", " ", f"{attrs.get('class', '')} {attrs.get('id', '')}"
         )
         is_level_bar = (
-            re.search(r"(?:^|\s)level(?:$|\s)", level_name, re.IGNORECASE)
+            re.search(
+                r"(?:^|\s)(?:level|skills?|progress)(?:$|\s)",
+                level_name,
+                re.IGNORECASE,
+            )
             is not None
             or "data-level" in attrs
+            or attrs.get("role", "").lower() == "progressbar"
+            or tag == "progress"
         )
         if is_level_bar:
-            for attribute in ("style", "data-level", "aria-valuenow", "aria-valuetext"):
+            for attribute in (
+                "style",
+                "data-level",
+                "aria-valuenow",
+                "aria-valuetext",
+                "value",
+            ):
                 value = (attrs.get(attribute) or "").strip()
                 percentage = PERCENT_RE.search(value)
                 numeric_level = (
-                    attribute in {"data-level", "aria-valuenow"}
-                    and re.fullmatch(r"(?:\d{1,2}|100)(?:\.0+)?", value)
-                    and (attribute == "data-level" or attrs.get("aria-valuemax") == "100")
+                    re.fullmatch(r"(?:\d{1,2}|100)(?:\.\d+)?", value)
+                    and (
+                        attribute == "data-level"
+                        or (
+                            attribute == "aria-valuenow"
+                            and (
+                                attrs.get("aria-valuemax") == "100"
+                                or attrs.get("role", "").lower() == "progressbar"
+                            )
+                        )
+                        or (attribute == "value" and tag == "progress")
+                    )
                 )
                 if percentage or numeric_level:
                     self.level_percentages.append(f"{attribute}={value}")
@@ -224,16 +245,29 @@ def parse_page(name):
     return parse_html(read_page(name))
 
 
+def split_url(url):
+    """Parse a URL, reporting malformed input as an acceptance failure."""
+    try:
+        parts = urlsplit(url)
+        parts.hostname
+        parts.port
+    except ValueError:
+        raise AssertionError(f"Invalid URL: {url!r}") from None
+    return parts
+
+
+def is_local_http_url(parts):
+    return parts.scheme in {"", "http", "https"} and (
+        not parts.netloc or parts.hostname == SITE_HOST
+    )
+
+
 def daily_links(page):
     """Return local links under the daily path, regardless of their suffix."""
     matches = []
     for href in page.links:
-        parts = urlsplit(href)
-        if parts.scheme and parts.scheme not in {"http", "https"}:
-            continue
-        if parts.netloc and parts.hostname != SITE_HOST:
-            continue
-        if parts.path.startswith(DAILY_PATH_PREFIX):
+        parts = split_url(href)
+        if is_local_http_url(parts) and parts.path.startswith(DAILY_PATH_PREFIX):
             matches.append(href)
     return matches
 
@@ -242,7 +276,7 @@ def dated_daily_links(page):
     """Return local daily links with a date usable for latest-update checks."""
     matches = []
     for href in daily_links(page):
-        match = DAILY_DATE_RE.match(urlsplit(href).path)
+        match = DAILY_DATE_RE.match(split_url(href).path)
         if match:
             matches.append((href, match.group(1)))
     return matches
@@ -259,6 +293,7 @@ def download_control_error(tag, href, page_name):
     try:
         parts = urlsplit(value)
         hostname = parts.hostname
+        parts.port
     except ValueError:
         return f"has an invalid URL: {href!r}"
 
@@ -266,8 +301,14 @@ def download_control_error(tag, href, page_name):
         return f"must use an HTTP(S) or local URL, got {href!r}"
     if parts.scheme and not parts.netloc:
         return f"has an invalid absolute URL: {href!r}"
+    if parts.netloc and not parts.path.strip("/"):
+        return f"must target a non-root external path, got {href!r}"
     if parts.netloc and hostname != SITE_HOST:
-        # Offline static tests cannot verify remote release artifacts.
+        if value not in VERIFIED_EXTERNAL_DOWNLOADS:
+            return (
+                "is not in VERIFIED_EXTERNAL_DOWNLOADS; live verification is required: "
+                f"{href!r}"
+            )
         return None
     if not parts.path:
         return f"must target a download rather than a fragment or empty path, got {href!r}"
@@ -284,8 +325,25 @@ def download_control_error(tag, href, page_name):
 
 
 def is_hello_world_url(url):
-    path = urlsplit(url).path
-    return re.search(r"(?:^|/)hello-world(?:\.html)?/?$", path) is not None
+    parts = split_url(url)
+    return is_local_http_url(parts) and re.search(
+        r"(?:^|/)hello-world(?:\.html)?/?$", parts.path
+    ) is not None
+
+
+def original_article_links(page):
+    """Return local article links that are neither daily reports nor the draft."""
+    matches = []
+    for href in page.links:
+        parts = split_url(href)
+        if not is_local_http_url(parts):
+            continue
+        if not parts.path.startswith("/blog/") or parts.path.startswith(DAILY_PATH_PREFIX):
+            continue
+        if parts.path.rstrip("/") == "/blog" or is_hello_world_url(href):
+            continue
+        matches.append(href)
+    return matches
 
 
 def public_html_files():
@@ -315,17 +373,57 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
 
     def test_homepage_contains_required_sections(self):
         homepage = read_page("index")
-        for section_id in ("learning-path", "projects", "original-articles", "latest-daily"):
-            with self.subTest(section=section_id):
+        sections = {
+            section_id: parse_html(section(homepage, section_id))
+            for section_id in HOMEPAGE_SECTION_IDS
+        }
+        for section_id, page in sections.items():
+            with self.subTest(section=section_id, requirement="visible text"):
                 self.assertTrue(
-                    section(homepage, section_id),
-                    f"Homepage must contain a non-empty section id={section_id!r}.",
+                    page.visible_text,
+                    f"Homepage section id={section_id!r} must contain visible text.",
                 )
 
-    def test_original_articles_exclude_daily_links(self):
-        original_articles = section(
-            read_page("index"), "original-articles", "latest-daily"
+        with self.subTest(section="learning-path", requirement="path title"):
+            self.assertIn(
+                LEARNING_PATH_TITLE.replace(" ", ""),
+                sections["learning-path"].compact_text,
+                "learning-path must contain its complete path title.",
+            )
+        for project_name in PROJECT_NAMES:
+            with self.subTest(section="projects", project=project_name):
+                self.assertIn(
+                    project_name.replace(" ", ""),
+                    sections["projects"].compact_text,
+                    f"projects must contain the real project {project_name!r}.",
+                )
+        self.assertTrue(
+            original_article_links(sections["original-articles"]),
+            "original-articles must contain at least one original article link.",
         )
+        self.assertTrue(
+            dated_daily_links(sections["latest-daily"]),
+            "latest-daily must contain at least one dated daily link.",
+        )
+
+    def test_homepage_sections_follow_content_order(self):
+        homepage = read_page("index")
+        section_id_pattern = re.compile(
+            r"\bid\s*=\s*([\"'])("
+            + "|".join(HOMEPAGE_SECTION_IDS)
+            + r")\1"
+        )
+        actual_order = [
+            match.group(2) for match in section_id_pattern.finditer(homepage)
+        ]
+        self.assertEqual(
+            list(HOMEPAGE_SECTION_IDS),
+            actual_order,
+            "Homepage sections must follow the learning, projects, original, daily order.",
+        )
+
+    def test_original_articles_exclude_daily_links(self):
+        original_articles = section(read_page("index"), "original-articles")
         links = daily_links(parse_html(original_articles))
         self.assertFalse(
             links,
@@ -377,8 +475,19 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
             "/daily must show a latest-update label with a real date, "
             "for example '最近更新：2026-11-05'; generic '每日更新' is insufficient.",
         )
-        labelled_date = f"{int(match.group(1)):04d}-{int(match.group(2)):02d}-{int(match.group(3)):02d}"
-        newest_daily_date = max(date for _, date in links)
+        labelled_date_text = (
+            f"{int(match.group(1)):04d}-{int(match.group(2)):02d}-"
+            f"{int(match.group(3)):02d}"
+        )
+        try:
+            labelled_date = datetime.date.fromisoformat(labelled_date_text)
+            dated_links = [
+                (href, datetime.date.fromisoformat(date_text))
+                for href, date_text in links
+            ]
+        except ValueError as error:
+            self.fail(f"/daily must use real ISO calendar dates: {error}")
+        newest_daily_date = max(date for _, date in dated_links)
         self.assertEqual(
             newest_daily_date,
             labelled_date,
@@ -487,6 +596,31 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
 class BrandSiteHarnessTests(unittest.TestCase):
     """Exercise acceptance boundaries with small, isolated dist fixtures."""
 
+    @staticmethod
+    def homepage_html(overrides=None):
+        contents = {
+            "learning-path": "<h2>AI Agent：从入门到做出第一个工具</h2>",
+            "projects": "<h2>代表作品</h2><p>文心启航</p><p>Mind Keeper 日报系统</p>",
+            "original-articles": (
+                '<h2>最新原创</h2><a href="/blog/agent-basics">Agent 入门</a>'
+            ),
+            "latest-daily": (
+                "<h2>最新 AI 日报</h2><p>自动整理</p>"
+                '<a href="/blog/ai-daily-2026-11-05">2026-11-05 日报</a>'
+            ),
+        }
+        if overrides:
+            contents.update(overrides)
+        return "".join(
+            f'<section id="{section_id}">{contents[section_id]}</section>'
+            for section_id in (
+                "learning-path",
+                "projects",
+                "original-articles",
+                "latest-daily",
+            )
+        )
+
     def run_acceptance(self, test_name, files):
         with tempfile.TemporaryDirectory() as directory:
             dist = Path(directory)
@@ -494,7 +628,7 @@ class BrandSiteHarnessTests(unittest.TestCase):
                 path = dist / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(content, encoding="utf-8")
-            with mock.patch(f"{__name__}.DIST", dist):
+            with mock.patch.dict(globals(), {"DIST": dist}):
                 test = BrandSiteAcceptanceTests(test_name)
                 getattr(test, test_name)()
 
@@ -535,6 +669,103 @@ class BrandSiteHarnessTests(unittest.TestCase):
                     {"blog.html": f'<a href="{href}">AIHOT 条目</a>'},
                 )
 
+    def test_homepage_required_sections_reject_empty_containers(self):
+        for section_id in (
+            "learning-path",
+            "projects",
+            "original-articles",
+            "latest-daily",
+        ):
+            with self.subTest(section=section_id):
+                self.assert_rejected(
+                    "test_homepage_contains_required_sections",
+                    {"index.html": self.homepage_html({section_id: ""})},
+                )
+
+    def test_homepage_required_sections_check_their_own_content(self):
+        self.run_acceptance(
+            "test_homepage_contains_required_sections",
+            {"index.html": self.homepage_html()},
+        )
+        incomplete_sections = {
+            "learning-path": "<h2>从这里开始</h2><p>后续更新</p>",
+            "projects": "<h2>代表作品</h2><p>文心启航</p>",
+            "original-articles": (
+                "<h2>最新原创</h2>"
+                '<a href="/blog/ai-daily-2026-11-05">日报不能冒充原创</a>'
+            ),
+            "latest-daily": "<h2>最新 AI 日报</h2><p>自动整理</p>",
+        }
+        for section_id, content in incomplete_sections.items():
+            with self.subTest(section=section_id):
+                self.assert_rejected(
+                    "test_homepage_contains_required_sections",
+                    {
+                        "index.html": self.homepage_html(
+                            {section_id: content}
+                        )
+                    },
+                )
+
+    def test_homepage_section_order_is_validated_separately(self):
+        self.run_acceptance(
+            "test_homepage_sections_follow_content_order",
+            {"index.html": self.homepage_html()},
+        )
+        self.assert_rejected(
+            "test_homepage_sections_follow_content_order",
+            {
+                "index.html": (
+                    "<section id=\"projects\">文心启航 Mind Keeper 日报系统</section>"
+                    "<section id=\"learning-path\">AI Agent：从入门到做出第一个工具</section>"
+                    '<section id="original-articles">'
+                    '<a href="/blog/agent-basics">原创</a></section>'
+                    '<section id="latest-daily">'
+                    '<a href="/blog/ai-daily-2026-11-05">日报</a></section>'
+                )
+            },
+        )
+
+    def test_original_articles_daily_links_cannot_hide_after_nested_boundary(self):
+        self.assert_rejected(
+            "test_original_articles_exclude_daily_links",
+            {
+                "index.html": (
+                    '<section id="original-articles">'
+                    '<a href="/blog/agent-basics">原创</a>'
+                    '<div><section id="latest-daily">嵌套边界</section></div>'
+                    '<a href="/blog/ai-daily-2026-11-05">日报</a>'
+                    "</section>"
+                )
+            },
+        )
+
+    def test_section_extraction_does_not_use_following_sibling_daily_links(self):
+        self.assert_rejected(
+            "test_latest_daily_contains_daily_links",
+            {
+                "index.html": (
+                    '<section id="latest-daily">自动整理</section>'
+                    '<section id="following-sibling">'
+                    '<a href="/blog/ai-daily-2026-11-05">日报</a>'
+                    "</section>"
+                )
+            },
+        )
+        self.run_acceptance(
+            "test_original_articles_exclude_daily_links",
+            {
+                "index.html": (
+                    '<section id="original-articles">'
+                    '<a href="/blog/agent-basics">原创</a>'
+                    "</section>"
+                    '<section id="latest-daily">'
+                    '<a href="/blog/ai-daily-2026-11-05">日报</a>'
+                    "</section>"
+                )
+            },
+        )
+
     def test_download_ctas_reject_dead_actions_and_missing_local_files(self):
         controls = (
             "<button>免费下载</button>",
@@ -552,17 +783,55 @@ class BrandSiteHarnessTests(unittest.TestCase):
                     {"portfolio/writing-coach.html": control},
                 )
 
-    def test_download_ctas_accept_existing_local_and_absolute_external_files(self):
+    def test_download_ctas_accept_existing_local_files(self):
         self.run_acceptance(
             "test_writing_coach_download_controls_are_real_links",
             {
                 "portfolio/writing-coach.html": (
                     '<a href="/downloads/writing-coach.zip">下载安装包</a>'
-                    '<a href="https://example.com/releases/writing-coach.zip">下载镜像</a>'
+                    '<a href="https://mind-keeper.com/downloads/writing-coach.zip">本站镜像</a>'
                 ),
                 "downloads/writing-coach.zip": "local fixture",
             },
         )
+
+    def test_download_ctas_reject_unverified_writing_coach_releases_url(self):
+        self.assert_rejected(
+            "test_writing_coach_download_controls_are_real_links",
+            {
+                "portfolio/writing-coach.html": (
+                    '<a href="https://github.com/wangyuxiong/writing-coach/releases">'
+                    "下载试用</a>"
+                )
+            },
+        )
+
+    def test_download_ctas_reject_root_only_external_urls_even_when_allowlisted(self):
+        for href in ("https://example.com", "https://example.com/"):
+            with self.subTest(href=href):
+                with mock.patch.dict(
+                    globals(), {"VERIFIED_EXTERNAL_DOWNLOADS": {href}}
+                ):
+                    self.assert_rejected(
+                        "test_writing_coach_download_controls_are_real_links",
+                        {
+                            "portfolio/writing-coach.html": (
+                                f'<a href="{href}">下载试用</a>'
+                            )
+                        },
+                    )
+
+    def test_download_ctas_accept_temporarily_allowlisted_external_file(self):
+        href = "https://downloads.example.com/releases/writing-coach.zip"
+        with mock.patch.dict(globals(), {"VERIFIED_EXTERNAL_DOWNLOADS": {href}}):
+            self.run_acceptance(
+                "test_writing_coach_download_controls_are_real_links",
+                {
+                    "portfolio/writing-coach.html": (
+                        f'<a href="{href}">下载已验证安装包</a>'
+                    )
+                },
+            )
 
     def test_about_rejects_legacy_skill_labels_and_level_bars(self):
         skill_labels = (
@@ -584,6 +853,10 @@ class BrandSiteHarnessTests(unittest.TestCase):
         level_bars = (
             '<div class="skill-level" style="width: 85%"></div>',
             '<div data-level="85" aria-valuemax="100"></div>',
+            '<div class="skill-bar" style="width: 85%"></div>',
+            '<div class="progress" style="width: 80%"></div>',
+            '<div role="progressbar" aria-valuenow="75" aria-valuemax="100"></div>',
+            '<progress value="85" max="100">85%</progress>',
         )
         for bar in level_bars:
             with self.subTest(bar=bar):
@@ -591,16 +864,84 @@ class BrandSiteHarnessTests(unittest.TestCase):
                     "test_about_contains_no_skill_percentages", {"about.html": bar}
                 )
 
-    def test_about_allows_unrelated_percentage_prose_and_progress(self):
+    def test_about_allows_unrelated_percentage_prose(self):
         self.run_acceptance(
             "test_about_contains_no_skill_percentages",
             {
                 "about.html": (
                     "<p>100% 原创；内容创作 100% 原创；85% 的引用经过人工复核。</p>"
-                    '<div class="progress" style="width: 80%"></div>'
                 )
             },
         )
+
+    def test_daily_rejects_impossible_latest_update_dates(self):
+        for invalid_date in ("2026-99-99", "2026-02-30"):
+            with self.subTest(date=invalid_date):
+                self.assert_rejected(
+                    "test_daily_has_real_latest_update_label",
+                    {
+                        "daily.html": (
+                            f"<p>最近更新：{invalid_date}</p>"
+                            f'<a href="/blog/ai-daily-{invalid_date}">日报</a>'
+                        )
+                    },
+                )
+
+    def test_malformed_urls_become_assertion_failures(self):
+        cases = (
+            "test_blog_excludes_daily_links",
+            "test_blog_excludes_hello_world_link",
+            "test_public_html_contains_no_hello_world_public_urls",
+        )
+        for test_name in cases:
+            for href in ("http://[::1", "https://example.com:bad/blog/hello-world"):
+                with self.subTest(test=test_name, href=href):
+                    try:
+                        self.assert_rejected(
+                            test_name,
+                            {"blog.html": f'<a href="{href}">malformed</a>'},
+                        )
+                    except ValueError as error:
+                        self.fail(
+                            "URL parsing escaped as ValueError instead of assertion: "
+                            f"{error}"
+                        )
+
+    def test_hello_world_checks_only_reject_local_urls(self):
+        for test_name in (
+            "test_blog_excludes_hello_world_link",
+            "test_public_html_contains_no_hello_world_public_urls",
+        ):
+            with self.subTest(test=test_name, kind="external citation"):
+                self.run_acceptance(
+                    test_name,
+                    {
+                        "blog.html": (
+                            '<a href="https://example.com/blog/hello-world">外部引用</a>'
+                        )
+                    },
+                )
+            for href in (
+                "/blog/hello-world",
+                "https://mind-keeper.com/blog/hello-world",
+                "//mind-keeper.com/blog/hello-world",
+            ):
+                with self.subTest(test=test_name, href=href):
+                    self.assert_rejected(
+                        test_name,
+                        {"blog.html": f'<a href="{href}">草稿</a>'},
+                    )
+
+    def test_missing_page_diagnostic_supports_temporary_dist(self):
+        try:
+            self.run_acceptance("test_homepage_title", {})
+        except AssertionError as error:
+            self.assertIn("Missing generated page:", str(error))
+            self.assertIn("index.html", str(error))
+        except ValueError as error:
+            self.fail(f"Missing-page diagnostic raised ValueError: {error}")
+        else:
+            self.fail("A missing homepage must fail acceptance.")
 
 
 if __name__ == "__main__":
