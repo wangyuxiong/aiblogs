@@ -1,0 +1,32 @@
+.gitignore
+  h_8e789064a132a5 33-34
+app/about/page.tsx
+  h_8e789064a132a5 116,119,129
+app/daily/page.tsx
+  h_8e789064a132a5 3,68
+components/content/blog-listing.tsx
+  h_8e789064a132a5 7
+components/content/post-card.tsx
+  h_8e789064a132a5 9,12
+components/sections/featured-posts.tsx
+  h_8e789064a132a5 2,5
+components/sections/latest-daily.tsx
+  h_8e789064a132a5 2
+lib/posts.ts
+  h_8e789064a132a5 1,10-12
+lib/utils.ts
+  h_8e789064a132a5 13
+scripts/test-brand-site.py
+  h_8e789064a132a5 843-856
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3149ed2ef09a674be522a32875854ecd2e8c2632",
+  "prompts": {},
+  "humans": {
+    "h_8e789064a132a5": {
+      "author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
