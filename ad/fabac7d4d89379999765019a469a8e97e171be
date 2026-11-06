@@ -1,0 +1,19 @@
+app/daily/page.tsx
+  s_03efe0d05f31b6::t_8106e10209b428 2,7,14-15,29,31-35,38-44,97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "adfabac7d4d89379999765019a469a8e97e171be",
+  "prompts": {},
+  "sessions": {
+    "s_03efe0d05f31b6": {
+      "agent_id": {
+        "tool": "antcc",
+        "id": "a951e4c7-b85f-40a7-9e44-666ac293132d",
+        "model": "glink/Kimi-K3:glink_domestic"
+      },
+      "human_author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
