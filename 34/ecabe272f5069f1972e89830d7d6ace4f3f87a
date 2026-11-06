@@ -1,0 +1,30 @@
+app/about/page.tsx
+  h_8e789064a132a5 11-13
+app/blog/[slug]/page.tsx
+  h_8e789064a132a5 39
+app/blog/page.tsx
+  h_8e789064a132a5 12-14
+app/daily/page.tsx
+  h_8e789064a132a5 11-13
+app/layout.tsx
+  h_8e789064a132a5 58-60
+app/portfolio/layout.tsx
+  h_8e789064a132a5 9-11
+app/portfolio/writing-coach/layout.tsx
+  h_8e789064a132a5 10-12
+components/layout/navbar.tsx
+  h_8e789064a132a5 17-33,70,124
+scripts/test-brand-site.py
+  h_8e789064a132a5 27-45,291,308-309,534-564,584-623,668-707
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "34ecabe272f5069f1972e89830d7d6ace4f3f87a",
+  "prompts": {},
+  "humans": {
+    "h_8e789064a132a5": {
+      "author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
