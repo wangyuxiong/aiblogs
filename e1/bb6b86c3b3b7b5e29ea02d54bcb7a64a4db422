@@ -1,0 +1,14 @@
+scripts/test-brand-site.py
+  h_8e789064a132a5 5,9-10,15-17,22-29,132,148-168,228,231-245,251-285,333,339,354,365,371,416-417,427-431,434-435,487-605
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "e1bb6b86c3b3b7b5e29ea02d54bcb7a64a4db422",
+  "prompts": {},
+  "humans": {
+    "h_8e789064a132a5": {
+      "author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
