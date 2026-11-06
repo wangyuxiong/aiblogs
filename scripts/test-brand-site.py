@@ -257,8 +257,74 @@ class _PageParser(HTMLParser):
                 self._control[3].append(data)
 
 
+class _ShellParser(HTMLParser):
+    """Inspect global navigation, metadata, and keyboard landmarks in rendered HTML."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.navigations = []
+        self.anchors = []
+        self.footer_anchors = []
+        self.footer_text_chunks = []
+        self.main_attributes = []
+        self.meta_tags = []
+        self.link_tags = []
+        self._nav_stack = []
+        self._anchor = None
+        self._footer_depth = 0
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "nav":
+            navigation = {"attributes": attrs, "links": []}
+            self.navigations.append(navigation)
+            self._nav_stack.append(navigation)
+        elif tag == "main":
+            self.main_attributes.append(attrs)
+        elif tag == "meta":
+            self.meta_tags.append(attrs)
+        elif tag == "link":
+            self.link_tags.append(attrs)
+        elif tag == "footer":
+            self._footer_depth += 1
+
+        if tag == "a":
+            self._anchor = {"attributes": attrs, "chunks": [], "text": ""}
+            self.anchors.append(self._anchor)
+            if self._nav_stack:
+                self._nav_stack[-1]["links"].append(self._anchor)
+            if self._footer_depth:
+                self.footer_anchors.append(self._anchor)
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self._anchor is not None:
+            self._anchor["text"] = " ".join("".join(self._anchor.pop("chunks")).split())
+            self._anchor = None
+        elif tag == "nav" and self._nav_stack:
+            self._nav_stack.pop()
+        elif tag == "footer" and self._footer_depth:
+            self._footer_depth -= 1
+
+    def handle_data(self, data):
+        if self._anchor is not None:
+            self._anchor["chunks"].append(data)
+        if self._footer_depth and data.strip():
+            self.footer_text_chunks.append(data)
+
+    @property
+    def footer_text(self):
+        return " ".join(" ".join(self.footer_text_chunks).split())
+
+
 def parse_html(html):
     parser = _PageParser()
+    parser.feed(html)
+    parser.close()
+    return parser
+
+
+def parse_shell(html):
+    parser = _ShellParser()
     parser.feed(html)
     parser.close()
     return parser
@@ -419,6 +485,108 @@ def public_html_files():
 
 
 class BrandSiteAcceptanceTests(unittest.TestCase):
+    def test_global_navigation_labels_and_order(self):
+        shell = parse_shell(read_page("index"))
+        expected_links = [
+            ("/blog", "文章"),
+            ("/portfolio", "项目"),
+            ("/daily", "日报"),
+            ("/about", "关于"),
+        ]
+        self.assertEqual(
+            ["主导航", "移动端导航"],
+            [nav["attributes"].get("aria-label") for nav in shell.navigations],
+            "Desktop and mobile navigation must have explicit, distinct accessible names.",
+        )
+        for navigation in shell.navigations:
+            with self.subTest(navigation=navigation["attributes"].get("aria-label")):
+                self.assertEqual(
+                    expected_links,
+                    [
+                        (link["attributes"].get("href"), link["text"])
+                        for link in navigation["links"]
+                    ],
+                    "Both navigation variants must use the global labels and order.",
+                )
+
+    def test_keyboard_skip_link_targets_main_content(self):
+        shell = parse_shell(read_page("index"))
+        skip_links = [link for link in shell.anchors if link["text"] == "跳到正文"]
+        self.assertEqual(1, len(skip_links), "There must be one visible-on-focus skip link.")
+        skip_link = skip_links[0]
+        self.assertIs(skip_link, shell.anchors[0], "The skip link must be the first link.")
+        self.assertEqual("#main-content", skip_link["attributes"].get("href"))
+        class_names = skip_link["attributes"].get("class", "").split()
+        self.assertIn("sr-only", class_names)
+        self.assertIn(
+            "focus:not-sr-only",
+            class_names,
+            "The skip link must become visible when it receives keyboard focus.",
+        )
+        self.assertEqual(
+            ["main-content"],
+            [attributes.get("id") for attributes in shell.main_attributes],
+            "The root layout must provide one main landmark targeted by the skip link.",
+        )
+
+    def test_global_metadata_uses_site_config_without_unverified_handles(self):
+        homepage = read_page("index")
+        shell = parse_shell(homepage)
+        metadata = {}
+        for attributes in shell.meta_tags:
+            key = attributes.get("name") or attributes.get("property")
+            if key:
+                metadata[key.lower()] = attributes.get("content", "")
+
+        self.assertEqual("Mind Keeper | AI 产品与工程实践", parse_html(homepage).title)
+        self.assertEqual(
+            "面向 AI 学习者的教程、真实项目复盘，以及每天筛选的 AI 技术与产品动态。",
+            metadata.get("description"),
+        )
+        for name in ("twitter:site", "twitter:creator"):
+            with self.subTest(metadata=name):
+                self.assertNotIn(name, metadata, "Unverified Twitter handles must be removed.")
+        for attributes in shell.meta_tags:
+            if attributes.get("name", "").lower() == "google-site-verification":
+                self.assertTrue(
+                    attributes.get("content", "").strip(),
+                    "Google verification metadata must never be empty.",
+                )
+
+        self.assertEqual(
+            "https://mind-keeper.com/images/og-default.png", metadata.get("og:image")
+        )
+        self.assertTrue(
+            (DIST / "images" / "og-default.png").is_file(),
+            "The default Open Graph image must exist in dist.",
+        )
+        rss_links = [
+            attributes.get("href")
+            for attributes in shell.link_tags
+            if "alternate" in attributes.get("rel", "").lower().split()
+            and attributes.get("type") == "application/rss+xml"
+        ]
+        self.assertEqual(1, len(rss_links))
+        rss_url = split_url(rss_links[0])
+        self.assertTrue(is_local_http_url(rss_url))
+        self.assertEqual("/feed.xml", rss_url.path)
+        self.assertTrue((DIST / "feed.xml").is_file(), "The advertised RSS feed must exist.")
+
+    def test_footer_brand_and_working_rss_github_links(self):
+        shell = parse_shell(read_page("index"))
+        self.assertIn("Mind Keeper · AI 产品与工程实践", shell.footer_text)
+        self.assertEqual(
+            ["RSS", "GitHub"], [link["text"] for link in shell.footer_anchors]
+        )
+        rss, github = shell.footer_anchors
+        self.assertEqual("/feed.xml", rss["attributes"].get("href"))
+        self.assertTrue((DIST / "feed.xml").is_file(), "The footer RSS target must exist.")
+        self.assertEqual("https://github.com/wangyuxiong", github["attributes"].get("href"))
+        github_url = split_url(github["attributes"]["href"])
+        self.assertEqual("https", github_url.scheme)
+        self.assertEqual("github.com", github_url.hostname)
+        self.assertTrue(github_url.path.strip("/"), "GitHub must link to a real profile path.")
+
     def test_homepage_title(self):
         self.assertEqual(
             "Mind Keeper | AI 产品与工程实践",
