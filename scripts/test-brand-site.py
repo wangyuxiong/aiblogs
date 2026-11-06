@@ -2,18 +2,30 @@
 """Static acceptance tests for the Mind Keeper personal brand site."""
 
 import re
+import tempfile
 import unittest
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlsplit
+from unittest import mock
+from urllib.parse import unquote, urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
 POSITIONING_TEXT = "AI 产品与工程实践"
-DAILY_LINK_RE = re.compile(r"^/blog/ai-daily-(\d{4}-\d{2}-\d{2})/?$")
+SITE_HOST = "mind-keeper.com"
+DAILY_PATH_PREFIX = "/blog/ai-daily-"
+DAILY_DATE_RE = re.compile(r"^/blog/ai-daily-(\d{4}-\d{2}-\d{2})(?:/|$)")
 LATEST_UPDATE_RE = re.compile(
     r"(?:最近|最新|最后)\s*更新\s*[：:]?\s*"
     r"(\d{4})\s*(?:-|/|\.|年)\s*(\d{1,2})\s*(?:-|/|\.|月)\s*(\d{1,2})\s*日?"
+)
+PERCENT_RE = re.compile(r"(?<!\d)(?:\d{1,2}|100)\s*%")
+SKILL_PERCENTAGE_RE = re.compile(
+    r"(?<![\w.])(?:React(?:\s*/\s*Next(?:\.js)?)?|TypeScript|Node(?:\.js)?|"
+    r"AI\s*(?:工作流|workflow)(?:\s*/\s*Agent)?|内容创作|content\s+creation|"
+    r"SEO(?:\s*/\s*营销)?)(?![\w.])\s*[:：]?\s*(?<!\d)(?:\d{1,2}|100)\s*%"
+    r"(?!\s*原创)",
+    re.IGNORECASE,
 )
 FAKE_WRITING_EXAMPLES = (
     "每个人都有自己的梦想，有的想当科学家，有的想当医生，而我最想成为一名宇航员",
@@ -117,6 +129,7 @@ class _PageParser(HTMLParser):
         self.public_urls = []
         self.hash_links = []
         self.download_controls = []
+        self.level_percentages = []
 
     @property
     def title(self):
@@ -132,6 +145,27 @@ class _PageParser(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        level_name = re.sub(
+            r"[_-]+", " ", f"{attrs.get('class', '')} {attrs.get('id', '')}"
+        )
+        is_level_bar = (
+            re.search(r"(?:^|\s)level(?:$|\s)", level_name, re.IGNORECASE)
+            is not None
+            or "data-level" in attrs
+        )
+        if is_level_bar:
+            for attribute in ("style", "data-level", "aria-valuenow", "aria-valuetext"):
+                value = (attrs.get(attribute) or "").strip()
+                percentage = PERCENT_RE.search(value)
+                numeric_level = (
+                    attribute in {"data-level", "aria-valuenow"}
+                    and re.fullmatch(r"(?:\d{1,2}|100)(?:\.0+)?", value)
+                    and (attribute == "data-level" or attrs.get("aria-valuemax") == "100")
+                )
+                if percentage or numeric_level:
+                    self.level_percentages.append(f"{attribute}={value}")
+                    break
+
         if tag in {"head", "script", "style", "noscript"}:
             self._hidden_depth += 1
         if tag == "title":
@@ -191,12 +225,62 @@ def parse_page(name):
 
 
 def daily_links(page):
+    """Return local links under the daily path, regardless of their suffix."""
     matches = []
     for href in page.links:
-        match = DAILY_LINK_RE.match(urlsplit(href).path)
+        parts = urlsplit(href)
+        if parts.scheme and parts.scheme not in {"http", "https"}:
+            continue
+        if parts.netloc and parts.hostname != SITE_HOST:
+            continue
+        if parts.path.startswith(DAILY_PATH_PREFIX):
+            matches.append(href)
+    return matches
+
+
+def dated_daily_links(page):
+    """Return local daily links with a date usable for latest-update checks."""
+    matches = []
+    for href in daily_links(page):
+        match = DAILY_DATE_RE.match(urlsplit(href).path)
         if match:
             matches.append((href, match.group(1)))
     return matches
+
+
+def download_control_error(tag, href, page_name):
+    """Return why a download control is unusable, or None when it is valid."""
+    if tag != "a":
+        return "is a dead <button>; use a real link with a download target"
+    if href is None or not href.strip():
+        return f"must have a usable href, got {href!r}"
+
+    value = href.strip()
+    try:
+        parts = urlsplit(value)
+        hostname = parts.hostname
+    except ValueError:
+        return f"has an invalid URL: {href!r}"
+
+    if parts.scheme not in {"", "http", "https"}:
+        return f"must use an HTTP(S) or local URL, got {href!r}"
+    if parts.scheme and not parts.netloc:
+        return f"has an invalid absolute URL: {href!r}"
+    if parts.netloc and hostname != SITE_HOST:
+        # Offline static tests cannot verify remote release artifacts.
+        return None
+    if not parts.path:
+        return f"must target a download rather than a fragment or empty path, got {href!r}"
+
+    try:
+        local_path = urlsplit(urljoin(f"/{page_name}", value)).path
+        target = (DIST / unquote(local_path).lstrip("/")).resolve()
+        target.relative_to(DIST.resolve())
+    except (OSError, ValueError):
+        return f"must resolve to an existing file under dist, got {href!r}"
+    if not target.is_file():
+        return f"must resolve to an existing file under dist, got {href!r}"
+    return None
 
 
 def is_hello_world_url(url):
@@ -246,13 +330,13 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
         self.assertFalse(
             links,
             "original-articles must contain only original articles; found daily links: "
-            + repr([href for href, _ in links]),
+            + repr(links),
         )
 
     def test_latest_daily_contains_daily_links(self):
         latest_daily = parse_html(section(read_page("index"), "latest-daily"))
         self.assertTrue(
-            daily_links(latest_daily),
+            dated_daily_links(latest_daily),
             "latest-daily must link to at least one /blog/ai-daily-YYYY-MM-DD page.",
         )
 
@@ -267,8 +351,7 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
         links = daily_links(parse_page("blog"))
         self.assertFalse(
             links,
-            "/blog must not contain daily-report links; found: "
-            + repr([href for href, _ in links]),
+            "/blog must not contain daily-report links; found: " + repr(links),
         )
 
     def test_blog_excludes_hello_world_link(self):
@@ -279,13 +362,13 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
 
     def test_daily_still_contains_daily_links(self):
         self.assertTrue(
-            daily_links(parse_page("daily")),
+            dated_daily_links(parse_page("daily")),
             "/daily must retain links to /blog/ai-daily-YYYY-MM-DD pages.",
         )
 
     def test_daily_has_real_latest_update_label(self):
         page = parse_page("daily")
-        links = daily_links(page)
+        links = dated_daily_links(page)
         self.assertTrue(links, "/daily needs daily links before its latest update can be checked.")
 
         match = LATEST_UPDATE_RE.search(page.visible_text)
@@ -330,17 +413,8 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
         controls = parse_page("portfolio/writing-coach").download_controls
         for tag, href, label in controls:
             with self.subTest(control=label):
-                self.assertEqual(
-                    "a",
-                    tag,
-                    f"Download control {label!r} is a dead <button>; use a real link.",
-                )
-                self.assertTrue(
-                    href
-                    and href.strip() not in {"", "#"}
-                    and not href.strip().lower().startswith("javascript:"),
-                    f"Download control {label!r} must have a usable href, got {href!r}.",
-                )
+                error = download_control_error(tag, href, "portfolio/writing-coach")
+                self.assertIsNone(error, f"Download control {label!r} {error}.")
 
     def test_about_contains_positioning_text(self):
         page = parse_page("about")
@@ -350,11 +424,15 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
         )
 
     def test_about_contains_no_skill_percentages(self):
-        text = parse_page("about").visible_text
-        percentages = re.findall(r"(?<!\d)(?:\d{1,2}|100)\s*%", text)
+        page = parse_page("about")
+        percentages = [
+            match.group(0) for match in SKILL_PERCENTAGE_RE.finditer(page.visible_text)
+        ]
+        percentages.extend(page.level_percentages)
         self.assertFalse(
             percentages,
-            f"/about must not present skills as numeric percentages; found {percentages}.",
+            "/about must not present legacy skill labels or level bars as numeric "
+            f"percentages; found {percentages}.",
         )
 
     def test_public_html_contains_no_hash_links(self):
@@ -403,6 +481,125 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
         self.assertFalse(
             "hello-world" in sitemap,
             "Sitemap must exclude the hello-world post after it becomes a draft.",
+        )
+
+
+class BrandSiteHarnessTests(unittest.TestCase):
+    """Exercise acceptance boundaries with small, isolated dist fixtures."""
+
+    def run_acceptance(self, test_name, files):
+        with tempfile.TemporaryDirectory() as directory:
+            dist = Path(directory)
+            for name, content in files.items():
+                path = dist / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content, encoding="utf-8")
+            with mock.patch(f"{__name__}.DIST", dist):
+                test = BrandSiteAcceptanceTests(test_name)
+                getattr(test, test_name)()
+
+    def assert_rejected(self, test_name, files):
+        with self.assertRaises(AssertionError):
+            self.run_acceptance(test_name, files)
+
+    def test_daily_prefix_variants_are_rejected_in_both_original_sections(self):
+        hrefs = (
+            "/blog/ai-daily-",
+            "/blog/ai-daily-draft",
+            "/blog/ai-daily-draft/nested",
+            "/blog/ai-daily-2026-11-05/nested",
+            "https://mind-keeper.com/blog/ai-daily-draft",
+        )
+        pages = {
+            "test_original_articles_exclude_daily_links": (
+                "index.html",
+                '<section id="original-articles"><a href="{}">daily</a></section>'
+                '<section id="latest-daily"></section>',
+            ),
+            "test_blog_excludes_daily_links": ("blog.html", '<a href="{}">daily</a>'),
+        }
+        for href in hrefs:
+            for test_name, (filename, template) in pages.items():
+                with self.subTest(href=href, test=test_name):
+                    self.assert_rejected(test_name, {filename: template.format(href)})
+
+    def test_aihot_external_urls_are_not_classified_as_local_daily_links(self):
+        hrefs = (
+            "https://aihot.news/items/hkcafk9es55rbok8pinu90x5o",
+            "https://aihot.news/blog/ai-daily-draft",
+        )
+        for href in hrefs:
+            with self.subTest(href=href):
+                self.run_acceptance(
+                    "test_blog_excludes_daily_links",
+                    {"blog.html": f'<a href="{href}">AIHOT 条目</a>'},
+                )
+
+    def test_download_ctas_reject_dead_actions_and_missing_local_files(self):
+        controls = (
+            "<button>免费下载</button>",
+            "<a>免费下载</a>",
+            '<a href="">免费下载</a>',
+            '<a href="#">免费下载</a>',
+            '<a href="#download">免费下载</a>',
+            '<a href="JavaScript:void(0)">免费下载</a>',
+            '<a href="/downloads/missing.zip">免费下载</a>',
+        )
+        for control in controls:
+            with self.subTest(control=control):
+                self.assert_rejected(
+                    "test_writing_coach_download_controls_are_real_links",
+                    {"portfolio/writing-coach.html": control},
+                )
+
+    def test_download_ctas_accept_existing_local_and_absolute_external_files(self):
+        self.run_acceptance(
+            "test_writing_coach_download_controls_are_real_links",
+            {
+                "portfolio/writing-coach.html": (
+                    '<a href="/downloads/writing-coach.zip">下载安装包</a>'
+                    '<a href="https://example.com/releases/writing-coach.zip">下载镜像</a>'
+                ),
+                "downloads/writing-coach.zip": "local fixture",
+            },
+        )
+
+    def test_about_rejects_legacy_skill_labels_and_level_bars(self):
+        skill_labels = (
+            "React / Next.js",
+            "TypeScript",
+            "Node.js",
+            "AI 工作流 / Agent",
+            "AI workflow",
+            "内容创作",
+            "content creation",
+            "SEO / 营销",
+        )
+        for label in skill_labels:
+            with self.subTest(label=label):
+                self.assert_rejected(
+                    "test_about_contains_no_skill_percentages",
+                    {"about.html": f"<span>{label}</span><span>85%</span>"},
+                )
+        level_bars = (
+            '<div class="skill-level" style="width: 85%"></div>',
+            '<div data-level="85" aria-valuemax="100"></div>',
+        )
+        for bar in level_bars:
+            with self.subTest(bar=bar):
+                self.assert_rejected(
+                    "test_about_contains_no_skill_percentages", {"about.html": bar}
+                )
+
+    def test_about_allows_unrelated_percentage_prose_and_progress(self):
+        self.run_acceptance(
+            "test_about_contains_no_skill_percentages",
+            {
+                "about.html": (
+                    "<p>100% 原创；内容创作 100% 原创；85% 的引用经过人工复核。</p>"
+                    '<div class="progress" style="width: 80%"></div>'
+                )
+            },
         )
 
 
