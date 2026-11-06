@@ -24,11 +24,14 @@ HOMEPAGE_SECTION_IDS = (
 )
 LEARNING_PATH_TITLE = "AI Agent：从入门到做出第一个工具"
 PROJECT_NAMES = ("文心启航", "Mind Keeper 日报系统")
-DAILY_PATH_PREFIX = "/blog/ai-daily-"
-DAILY_DATE_RE = re.compile(r"^/blog/ai-daily-(\d{4}-\d{2}-\d{2})(?:/|$)")
+DAILY_PATH_PREFIXES = ("/blog/ai-daily-", "/blog/ai-hot-daily-")
+DAILY_DATE_RE = re.compile(
+    r"^/blog/(?:ai-daily-|ai-hot-daily-)(\d{4}-\d{2}-\d{2})(?:/|$)"
+)
 LATEST_UPDATE_RE = re.compile(
     r"(?:最近|最新|最后)\s*更新\s*[：:]?\s*"
     r"(\d{4})\s*(?:-|/|\.|年)\s*(\d{1,2})\s*(?:-|/|\.|月)\s*(\d{1,2})\s*日?"
+    r"(?!\d)"
 )
 PERCENT_RE = re.compile(r"(?<!\d)(?:\d{1,2}|100)\s*%")
 SKILL_PERCENTAGE_RE = re.compile(
@@ -121,11 +124,14 @@ class _PageParser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self._hidden_depth = 0
+        self._element_stack = []
+        self._level_bar_depth = 0
         self._in_title = False
         self._title_chunks = []
         self._text_chunks = []
         self._control = None
         self.links = []
+        self.anchor_links = []
         self.public_urls = []
         self.hash_links = []
         self.download_controls = []
@@ -159,7 +165,10 @@ class _PageParser(HTMLParser):
             or attrs.get("role", "").lower() == "progressbar"
             or tag == "progress"
         )
+        self._element_stack.append((tag, is_level_bar))
         if is_level_bar:
+            self._level_bar_depth += 1
+        if self._level_bar_depth:
             for attribute in (
                 "style",
                 "data-level",
@@ -210,12 +219,24 @@ class _PageParser(HTMLParser):
                 self.links.append(href)
 
         if tag in {"a", "button"}:
-            self._control = (tag, attrs.get("href"), [])
+            self._control = (tag, attrs.get("href"), [], [])
 
     def handle_endtag(self, tag):
+        for index in range(len(self._element_stack) - 1, -1, -1):
+            if self._element_stack[index][0] == tag:
+                closed_elements = self._element_stack[index:]
+                del self._element_stack[index:]
+                self._level_bar_depth -= sum(
+                    is_level_bar for _, is_level_bar in closed_elements
+                )
+                break
+
         if self._control is not None and tag == self._control[0]:
-            control_tag, href, chunks = self._control
+            control_tag, href, chunks, visible_chunks = self._control
             label = " ".join("".join(chunks).split())
+            visible_label = " ".join("".join(visible_chunks).split())
+            if control_tag == "a":
+                self.anchor_links.append((href, visible_label))
             if "下载" in label:
                 self.download_controls.append((control_tag, href, label))
             self._control = None
@@ -232,6 +253,8 @@ class _PageParser(HTMLParser):
             self._text_chunks.append(data)
         if self._control is not None:
             self._control[2].append(data)
+            if not self._hidden_depth:
+                self._control[3].append(data)
 
 
 def parse_html(html):
@@ -258,7 +281,7 @@ def split_url(url):
 
 def is_local_http_url(parts):
     return parts.scheme in {"", "http", "https"} and (
-        not parts.netloc or parts.hostname == SITE_HOST
+        not parts.netloc or (parts.hostname or "").rstrip(".") == SITE_HOST
     )
 
 
@@ -267,7 +290,7 @@ def daily_links(page):
     matches = []
     for href in page.links:
         parts = split_url(href)
-        if is_local_http_url(parts) and parts.path.startswith(DAILY_PATH_PREFIX):
+        if is_local_http_url(parts) and parts.path.startswith(DAILY_PATH_PREFIXES):
             matches.append(href)
     return matches
 
@@ -278,7 +301,14 @@ def dated_daily_links(page):
     for href in daily_links(page):
         match = DAILY_DATE_RE.match(split_url(href).path)
         if match:
-            matches.append((href, match.group(1)))
+            date_text = match.group(1)
+            try:
+                datetime.date.fromisoformat(date_text)
+            except ValueError:
+                raise AssertionError(
+                    f"Daily link {href!r} uses an invalid calendar date: {date_text}."
+                ) from None
+            matches.append((href, date_text))
     return matches
 
 
@@ -303,7 +333,7 @@ def download_control_error(tag, href, page_name):
         return f"has an invalid absolute URL: {href!r}"
     if parts.netloc and not parts.path.strip("/"):
         return f"must target a non-root external path, got {href!r}"
-    if parts.netloc and hostname != SITE_HOST:
+    if parts.netloc and (hostname or "").rstrip(".") != SITE_HOST:
         if value not in VERIFIED_EXTERNAL_DOWNLOADS:
             return (
                 "is not in VERIFIED_EXTERNAL_DOWNLOADS; live verification is required: "
@@ -338,12 +368,44 @@ def original_article_links(page):
         parts = split_url(href)
         if not is_local_http_url(parts):
             continue
-        if not parts.path.startswith("/blog/") or parts.path.startswith(DAILY_PATH_PREFIX):
+        if not parts.path.startswith("/blog/") or parts.path.startswith(DAILY_PATH_PREFIXES):
             continue
         if parts.path.rstrip("/") == "/blog" or is_hello_world_url(href):
             continue
         matches.append(href)
     return matches
+
+
+def generated_article_target_error(href):
+    """Return why a local article URL has no generated HTML target."""
+    parts = split_url(href)
+    article_path = unquote(parts.path).rstrip("/")
+    if not article_path.endswith(".html"):
+        article_path += ".html"
+    try:
+        blog_root = (DIST / "blog").resolve()
+        target = (DIST / article_path.lstrip("/")).resolve()
+        target.relative_to(blog_root)
+    except (OSError, ValueError):
+        return "must resolve to a generated article under dist/blog/"
+    if not target.is_file():
+        return f"has no generated article target under dist/blog/: {href!r}"
+    return None
+
+
+def homepage_article_link_errors(page, required_hrefs):
+    """Check visible labels and generated targets for required article links."""
+    required_hrefs = set(required_hrefs)
+    errors = []
+    for href, label in page.anchor_links:
+        if href not in required_hrefs:
+            continue
+        if not label:
+            errors.append(f"{href!r} has no visible non-empty anchor text")
+        target_error = generated_article_target_error(href)
+        if target_error:
+            errors.append(target_error)
+    return errors
 
 
 def public_html_files():
@@ -397,14 +459,27 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
                     sections["projects"].compact_text,
                     f"projects must contain the real project {project_name!r}.",
                 )
+        original_links = original_article_links(sections["original-articles"])
+        latest_daily = sections["latest-daily"]
         self.assertTrue(
-            original_article_links(sections["original-articles"]),
+            original_links,
             "original-articles must contain at least one original article link.",
         )
         self.assertTrue(
-            dated_daily_links(sections["latest-daily"]),
+            dated_daily_links(latest_daily),
             "latest-daily must contain at least one dated daily link.",
         )
+        for section_id, hrefs in (
+            ("original-articles", original_links),
+            ("latest-daily", daily_links(latest_daily)),
+        ):
+            with self.subTest(section=section_id, requirement="meaningful links"):
+                errors = homepage_article_link_errors(sections[section_id], hrefs)
+                self.assertFalse(
+                    errors,
+                    f"Homepage section {section_id!r} has unusable article links: "
+                    + repr(errors),
+                )
 
     def test_homepage_sections_follow_content_order(self):
         homepage = read_page("index")
@@ -435,7 +510,13 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
         latest_daily = parse_html(section(read_page("index"), "latest-daily"))
         self.assertTrue(
             dated_daily_links(latest_daily),
-            "latest-daily must link to at least one /blog/ai-daily-YYYY-MM-DD page.",
+            "latest-daily must link to at least one dated /blog/ai-daily- or "
+            "/blog/ai-hot-daily- page.",
+        )
+        errors = homepage_article_link_errors(latest_daily, daily_links(latest_daily))
+        self.assertFalse(
+            errors,
+            "latest-daily must use visible links to generated articles: " + repr(errors),
         )
 
     def test_latest_daily_contains_automation_label(self):
@@ -461,7 +542,7 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
     def test_daily_still_contains_daily_links(self):
         self.assertTrue(
             dated_daily_links(parse_page("daily")),
-            "/daily must retain links to /blog/ai-daily-YYYY-MM-DD pages.",
+            "/daily must retain dated /blog/ai-daily- or /blog/ai-hot-daily- links.",
         )
 
     def test_daily_has_real_latest_update_label(self):
@@ -581,6 +662,13 @@ class BrandSiteAcceptanceTests(unittest.TestCase):
                     f"{relative_path} exposes public hello-world URLs: {urls}",
                 )
 
+    def test_hello_world_html_is_not_generated(self):
+        path = DIST / "blog" / "hello-world.html"
+        self.assertFalse(
+            path.exists(),
+            "The hello-world draft must not have a generated dist/blog/hello-world.html file.",
+        )
+
     def test_sitemap_excludes_hello_world(self):
         path = DIST / "sitemap.xml"
         try:
@@ -621,6 +709,13 @@ class BrandSiteHarnessTests(unittest.TestCase):
             )
         )
 
+    def homepage_files(self, overrides=None):
+        return {
+            "index.html": self.homepage_html(overrides),
+            "blog/agent-basics.html": "original article fixture",
+            "blog/ai-daily-2026-11-05.html": "daily article fixture",
+        }
+
     def run_acceptance(self, test_name, files):
         with tempfile.TemporaryDirectory() as directory:
             dist = Path(directory)
@@ -657,6 +752,87 @@ class BrandSiteHarnessTests(unittest.TestCase):
                 with self.subTest(href=href, test=test_name):
                     self.assert_rejected(test_name, {filename: template.format(href)})
 
+    def test_legacy_daily_slug_cannot_count_as_original_or_remain_in_blog(self):
+        legacy_href = "/blog/ai-hot-daily-2026-05-25"
+        original_files = self.homepage_files(
+            {
+                "original-articles": (
+                    "<h2>最新原创</h2>"
+                    f'<a href="{legacy_href}">旧日报不能冒充原创</a>'
+                )
+            }
+        )
+        original_files["blog/ai-hot-daily-2026-05-25.html"] = "legacy daily"
+        cases = (
+            (
+                "original section exclusion",
+                "test_original_articles_exclude_daily_links",
+                {
+                    "index.html": (
+                        '<section id="original-articles">'
+                        '<a href="/blog/agent-basics">原创</a>'
+                        f'<a href="{legacy_href}">旧日报</a>'
+                        "</section>"
+                    )
+                },
+            ),
+            (
+                "blog exclusion",
+                "test_blog_excludes_daily_links",
+                {"blog.html": f'<a href="{legacy_href}">旧日报</a>'},
+            ),
+            (
+                "original link presence",
+                "test_homepage_contains_required_sections",
+                original_files,
+            ),
+        )
+        for label, test_name, files in cases:
+            with self.subTest(requirement=label):
+                self.assert_rejected(test_name, files)
+
+    def test_legacy_daily_slug_supports_latest_links_and_dates(self):
+        legacy_href = "/blog/ai-hot-daily-2026-05-25"
+        legacy_link = f'<a href="{legacy_href}">2026-05-25 旧日报</a>'
+        homepage_files = self.homepage_files(
+            {
+                "latest-daily": (
+                    "<h2>最新 AI 日报</h2><p>自动整理</p>" + legacy_link
+                )
+            }
+        )
+        homepage_files["blog/ai-hot-daily-2026-05-25.html"] = "legacy daily"
+        cases = (
+            (
+                "homepage required sections",
+                "test_homepage_contains_required_sections",
+                homepage_files,
+            ),
+            (
+                "latest daily",
+                "test_latest_daily_contains_daily_links",
+                {
+                    "index.html": (
+                        '<section id="latest-daily">' + legacy_link + "</section>"
+                    ),
+                    "blog/ai-hot-daily-2026-05-25.html": "legacy daily",
+                },
+            ),
+            (
+                "daily archive",
+                "test_daily_still_contains_daily_links",
+                {"daily.html": legacy_link},
+            ),
+            (
+                "latest update date",
+                "test_daily_has_real_latest_update_label",
+                {"daily.html": "<p>最近更新：2026-05-25</p>" + legacy_link},
+            ),
+        )
+        for label, test_name, files in cases:
+            with self.subTest(requirement=label):
+                self.run_acceptance(test_name, files)
+
     def test_aihot_external_urls_are_not_classified_as_local_daily_links(self):
         hrefs = (
             "https://aihot.news/items/hkcafk9es55rbok8pinu90x5o",
@@ -679,13 +855,13 @@ class BrandSiteHarnessTests(unittest.TestCase):
             with self.subTest(section=section_id):
                 self.assert_rejected(
                     "test_homepage_contains_required_sections",
-                    {"index.html": self.homepage_html({section_id: ""})},
+                    self.homepage_files({section_id: ""}),
                 )
 
     def test_homepage_required_sections_check_their_own_content(self):
         self.run_acceptance(
             "test_homepage_contains_required_sections",
-            {"index.html": self.homepage_html()},
+            self.homepage_files(),
         )
         incomplete_sections = {
             "learning-path": "<h2>从这里开始</h2><p>后续更新</p>",
@@ -700,12 +876,79 @@ class BrandSiteHarnessTests(unittest.TestCase):
             with self.subTest(section=section_id):
                 self.assert_rejected(
                     "test_homepage_contains_required_sections",
-                    {
-                        "index.html": self.homepage_html(
-                            {section_id: content}
-                        )
-                    },
+                    self.homepage_files({section_id: content}),
                 )
+
+    def test_homepage_article_links_require_text_and_existing_targets(self):
+        self.run_acceptance(
+            "test_homepage_contains_required_sections",
+            self.homepage_files(),
+        )
+        cases = {
+            "empty original anchor": {
+                "original-articles": (
+                    '<h2>最新原创</h2><a href="/blog/agent-basics"></a>'
+                )
+            },
+            "dead original anchor": {
+                "original-articles": (
+                    '<h2>最新原创</h2><a href="/blog/missing">不存在的原创</a>'
+                )
+            },
+            "empty dead original anchor": {
+                "original-articles": (
+                    '<h2>最新原创</h2><a href="/blog/missing"></a>'
+                )
+            },
+            "empty daily anchor": {
+                "latest-daily": (
+                    "<h2>最新 AI 日报</h2><p>自动整理</p>"
+                    '<a href="/blog/ai-daily-2026-11-05"></a>'
+                )
+            },
+            "dead daily anchor": {
+                "latest-daily": (
+                    "<h2>最新 AI 日报</h2><p>自动整理</p>"
+                    '<a href="/blog/ai-daily-2026-11-04">不存在的日报</a>'
+                )
+            },
+        }
+        for label, overrides in cases.items():
+            with self.subTest(case=label):
+                self.assert_rejected(
+                    "test_homepage_contains_required_sections",
+                    self.homepage_files(overrides),
+                )
+
+    def test_homepage_daily_links_reject_impossible_calendar_dates(self):
+        invalid_href = "/blog/ai-daily-2026-02-30"
+        overrides = {
+            "latest-daily": (
+                "<h2>最新 AI 日报</h2><p>自动整理</p>"
+                f'<a href="{invalid_href}">2026-02-30 日报</a>'
+            )
+        }
+        cases = (
+            (
+                "required sections",
+                "test_homepage_contains_required_sections",
+                self.homepage_files(overrides),
+            ),
+            (
+                "latest daily",
+                "test_latest_daily_contains_daily_links",
+                {
+                    "index.html": (
+                        '<section id="latest-daily">'
+                        f'<a href="{invalid_href}">2026-02-30 日报</a>'
+                        "</section>"
+                    )
+                },
+            ),
+        )
+        for label, test_name, files in cases:
+            with self.subTest(requirement=label):
+                self.assert_rejected(test_name, files)
 
     def test_homepage_section_order_is_validated_separately(self):
         self.run_acceptance(
@@ -864,6 +1107,18 @@ class BrandSiteHarnessTests(unittest.TestCase):
                     "test_about_contains_no_skill_percentages", {"about.html": bar}
                 )
 
+    def test_about_rejects_nested_skill_bar_percentage_children(self):
+        self.assert_rejected(
+            "test_about_contains_no_skill_percentages",
+            {
+                "about.html": (
+                    '<div class="skill-bar">'
+                    '<span style="width:85%"></span>'
+                    "</div>"
+                )
+            },
+        )
+
     def test_about_allows_unrelated_percentage_prose(self):
         self.run_acceptance(
             "test_about_contains_no_skill_percentages",
@@ -886,6 +1141,17 @@ class BrandSiteHarnessTests(unittest.TestCase):
                         )
                     },
                 )
+
+    def test_latest_update_rejects_date_with_trailing_digit(self):
+        valid_link = '<a href="/blog/ai-daily-2026-11-05">2026-11-05 日报</a>'
+        self.run_acceptance(
+            "test_daily_has_real_latest_update_label",
+            {"daily.html": "<p>最近更新：2026-11-05</p>" + valid_link},
+        )
+        self.assert_rejected(
+            "test_daily_has_real_latest_update_label",
+            {"daily.html": "<p>最近更新：2026-11-050</p>" + valid_link},
+        )
 
     def test_malformed_urls_become_assertion_failures(self):
         cases = (
@@ -924,6 +1190,7 @@ class BrandSiteHarnessTests(unittest.TestCase):
             for href in (
                 "/blog/hello-world",
                 "https://mind-keeper.com/blog/hello-world",
+                "https://mind-keeper.com./blog/hello-world",
                 "//mind-keeper.com/blog/hello-world",
             ):
                 with self.subTest(test=test_name, href=href):
@@ -931,6 +1198,16 @@ class BrandSiteHarnessTests(unittest.TestCase):
                         test_name,
                         {"blog.html": f'<a href="{href}">草稿</a>'},
                     )
+
+    def test_hello_world_generated_file_is_rejected_directly(self):
+        self.run_acceptance(
+            "test_hello_world_html_is_not_generated",
+            {"blog/agent-basics.html": "published original"},
+        )
+        self.assert_rejected(
+            "test_hello_world_html_is_not_generated",
+            {"blog/hello-world.html": "public draft"},
+        )
 
     def test_missing_page_diagnostic_supports_temporary_dist(self):
         try:
