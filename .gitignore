@@ -34,3 +34,6 @@ coverage
 # Misc
 *.pem
 scripts/.news-history.json
+
+# Isolated development worktrees
+.worktrees/
