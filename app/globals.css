@@ -35,6 +35,22 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
+:focus-visible {
+  outline: 3px solid #647a58;
+  outline-offset: 4px;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+::selection {
+  background-color: #d4dfc9;
+  color: #20271f;
+}
+
 /* Custom animations */
 @keyframes fade-in-up {
   from {
