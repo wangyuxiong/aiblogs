@@ -1,0 +1,14 @@
+components/layout/navbar.tsx
+  h_8e789064a132a5 106-107,112,140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1aab2b505160e22b4eeace87774141a138acdf36",
+  "prompts": {},
+  "humans": {
+    "h_8e789064a132a5": {
+      "author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
