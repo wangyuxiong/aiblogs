@@ -1,0 +1,20 @@
+app/layout.tsx
+  h_8e789064a132a5 8,11,15,18,23,30,62-67,69-71
+components/layout/footer.tsx
+  h_8e789064a132a5 1-2,8,12,18
+components/layout/navbar.tsx
+  h_8e789064a132a5 7,11-13,37,40,43,51-71,75-76,78-80,89,91-128
+scripts/test-brand-site.py
+  h_8e789064a132a5 260-318,326-332,488-589
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "5768faddac352df67e8a1b852c876267f56e0d4e",
+  "prompts": {},
+  "humans": {
+    "h_8e789064a132a5": {
+      "author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
