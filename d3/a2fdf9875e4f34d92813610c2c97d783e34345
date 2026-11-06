@@ -1,0 +1,23 @@
+components/sections/featured-projects.tsx
+  s_03efe0d05f31b6::t_9b8c73a9f7bdb1 1-93
+components/sections/latest-daily.tsx
+  s_03efe0d05f31b6::t_51c59e196d272a 1-56
+components/sections/learning-path.tsx
+  s_03efe0d05f31b6::t_85375650112d90 1-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d3a2fdf9875e4f34d92813610c2c97d783e34345",
+  "prompts": {},
+  "sessions": {
+    "s_03efe0d05f31b6": {
+      "agent_id": {
+        "tool": "antcc",
+        "id": "a951e4c7-b85f-40a7-9e44-666ac293132d",
+        "model": "glink/Kimi-K3:glink_domestic"
+      },
+      "human_author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
