@@ -1,20 +1,22 @@
 import { allPosts } from 'contentlayer/generated'
+import { getDailyPosts } from '@/lib/posts'
+import { formatDate } from '@/lib/utils'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'AI 学习日刊',
-  description: '每天精选 AI 领域最有价值的动态，帮你快速了解行业脉搏',
+  description: '内容来源于 AIHOT，经自动整理后发布',
   alternates: {
     canonical: '/daily',
+  },
+  openGraph: {
+    url: '/daily',
   },
 }
 
 export default function DailyPage() {
-  const dailyPosts = allPosts
-    .filter((post) => post.category === 'ai-daily' && !post.isDraft)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  const sourceCount = '20+'
+  const dailyPosts = getDailyPosts(allPosts)
+  const latestUpdate = dailyPosts[0]?.date.slice(0, 10)
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 sm:px-6 lg:px-8">
@@ -28,31 +30,22 @@ export default function DailyPage() {
             AI 学习日刊
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            每天精选 AI 领域最有价值的动态，帮你快速了解行业脉搏
+            内容来源于 AIHOT，经自动整理后发布
           </p>
-          <div className="mt-4 flex items-center justify-center gap-4 text-sm text-gray-500">
-            <span>📅 每日更新</span>
-            <span>•</span>
-            <span>🤖 自动抓取</span>
-            <span>•</span>
-            <span>📡 {sourceCount} 新闻源</span>
-          </div>
+          {latestUpdate && (
+            <p className="mt-4 text-sm text-gray-500">
+              最近更新：{latestUpdate}
+            </p>
+          )}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-12 max-w-lg mx-auto">
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-900">{dailyPosts.length}</div>
-            <div className="text-sm text-gray-500">期数日刊</div>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-900">{sourceCount}</div>
-            <div className="text-sm text-gray-500">新闻源</div>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-gray-900">∞</div>
-            <div className="text-sm text-gray-500">持续更新</div>
-          </div>
+        <div className="mb-12 text-center">
+          <span className="inline-block px-6 py-4 bg-gray-50 rounded-lg">
+            <span className="block text-2xl font-bold text-gray-900">
+              {dailyPosts.length}
+            </span>
+            <span className="block text-sm text-gray-500">期日刊</span>
+          </span>
         </div>
 
         {/* Daily Posts List */}
@@ -72,13 +65,7 @@ export default function DailyPage() {
                       {post.excerpt}
                     </p>
                     <div className="flex items-center gap-3 text-sm text-gray-500">
-                      <time dateTime={post.date}>
-                        {new Date(post.date).toLocaleDateString('zh-CN', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </time>
+                      <time dateTime={post.date}>{formatDate(post.date)}</time>
                       <span>•</span>
                       <span>{post.readingTime} 分钟阅读</span>
                       {post.tags && post.tags.length > 0 && (
@@ -105,10 +92,7 @@ export default function DailyPage() {
         {/* Empty State */}
         {dailyPosts.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-gray-500 mb-4">暂无日刊内容</p>
-            <p className="text-sm text-gray-400">
-              日刊每天上午自动更新，请稍后再来
-            </p>
+            <p className="text-gray-500">暂无日刊内容</p>
           </div>
         )}
       </div>

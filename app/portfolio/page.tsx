@@ -1,98 +1,103 @@
-'use client'
-
 import Link from 'next/link'
-import { motion } from 'framer-motion'
-import { ArrowRight, Sparkles, Feather, Brain } from 'lucide-react'
+import { projects } from '@/lib/projects'
 
 export default function PortfolioPage() {
   return (
-    <main className="min-h-screen bg-gray-50">
-      <section className="pt-32 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6"
-          >
-            作品集
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-lg text-gray-600 max-w-2xl mx-auto"
-          >
-            探索我构建的数字产品，每一个项目都是技术实践与创意表达的融合
-          </motion.p>
+    <div className="bg-[#f4f1e8] text-[#252a23]">
+      <header className="border-b border-[#354b38]/20 px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-12 lg:items-end">
+          <div className="lg:col-span-7">
+            <p className="mb-6 font-mono text-xs font-medium uppercase tracking-[0.18em] text-[#52634d]">
+              Selected work · Real problems
+            </p>
+            <h1 className="text-[clamp(3rem,7vw,5.75rem)] font-semibold leading-none tracking-[-0.05em] text-[#20271f]">
+              项目
+            </h1>
+          </div>
+          <p className="max-w-xl text-base leading-8 text-[#535b50] lg:col-span-5 lg:pb-2">
+            从真实问题出发，说明文心启航与 Mind Keeper 日报系统怎样实现、目前进展如何，以及哪些结果可以直接查看。
+          </p>
         </div>
-      </section>
+      </header>
 
-      <section className="pb-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Link href="/portfolio/writing-coach">
-              <div className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-blue-500 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 cursor-pointer">
-                <div className="relative h-64 sm:h-80 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600 overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-6xl mb-4">✍️</div>
-                      <div className="text-white/90 text-lg font-medium">AI 写作导师</div>
-                    </div>
-                  </div>
-                  <div className="absolute top-4 right-4 bg-blue-500/90 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
-                    桌面应用
-                  </div>
-                </div>
-
-                <div className="p-8">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                        文心启航
-                      </h2>
-                      <p className="text-gray-600 mb-4 leading-relaxed">
-                        基于 Tauri + React 构建的桌面端 AI 写作导师应用。通过分步引导，帮助用户完成从选题、构思到成稿的全流程作文创作。支持 Claude 和阿里云通义千问双模型。
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-sm rounded-full font-medium">Tauri</span>
-                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">React</span>
-                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">TypeScript</span>
-                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">Tailwind</span>
-                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">Zustand</span>
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
-                        <ArrowRight className="w-5 h-5" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-3 gap-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Sparkles className="w-4 h-4 text-blue-500" />
-                      <span>AI 智能引导</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Feather className="w-4 h-4 text-blue-500" />
-                      <span>Markdown 编辑</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Brain className="w-4 h-4 text-blue-500" />
-                      <span>多模型支持</span>
-                    </div>
-                  </div>
+      <section aria-label="项目列表" className="px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+        <div className="mx-auto max-w-7xl space-y-8">
+          {projects.map((project, index) => (
+            <article
+              key={project.slug}
+              aria-labelledby={`project-${project.slug}`}
+              className="grid gap-8 border border-[#354b38]/20 bg-[#faf8f2] p-6 sm:p-8 lg:grid-cols-12 lg:gap-12 lg:p-10"
+            >
+              <div className="lg:col-span-4">
+                <p className="font-mono text-xs uppercase leading-5 tracking-[0.14em] text-[#61705b]">
+                  {String(index + 1).padStart(2, '0')} / {project.kind}
+                </p>
+                <h2
+                  id={`project-${project.slug}`}
+                  className="mt-5 text-3xl font-semibold tracking-[-0.03em] text-[#263729] sm:text-4xl"
+                >
+                  {project.name}
+                </h2>
+                <div className="mt-7 border-l-2 border-[#6f8065] pl-4">
+                  <h3 className="text-xs font-semibold tracking-wide text-[#52634d]">当前状态</h3>
+                  <p className="mt-2 text-sm leading-6 text-[#5a6256]">{project.status}</p>
                 </div>
               </div>
-            </Link>
-          </motion.div>
+
+              <div className="lg:col-span-8">
+                <dl className="grid gap-7 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs font-semibold tracking-wide text-[#52634d]">要解决的问题</dt>
+                    <dd className="mt-3 text-sm leading-7 text-[#515a4e]">{project.problem}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold tracking-wide text-[#52634d]">实现方式</dt>
+                    <dd className="mt-3 text-sm leading-7 text-[#515a4e]">{project.implementation}</dd>
+                  </div>
+                </dl>
+
+                <div className="mt-8 border-t border-[#354b38]/15 pt-6">
+                  <h3 className="text-xs font-semibold tracking-wide text-[#52634d]">技术与流程</h3>
+                  <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-2" aria-label={`${project.name}技术与流程`}>
+                    {project.stack.map((item) => (
+                      <li key={item} className="font-mono text-xs leading-5 text-[#4e5d49]">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-7 flex flex-col items-start gap-3 border-t border-[#354b38]/15 pt-5 sm:flex-row sm:flex-wrap sm:gap-x-7">
+                  {project.links.map((link) =>
+                    link.external ? (
+                      <a
+                        key={link.href}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#354b38] underline decoration-[#5d7059]/40 underline-offset-4 transition-colors hover:text-[#1f3522] hover:decoration-current"
+                      >
+                        {link.label}
+                        <span aria-hidden="true">↗</span>
+                        <span className="sr-only">（在新窗口打开）</span>
+                      </a>
+                    ) : (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#354b38] underline decoration-[#5d7059]/40 underline-offset-4 transition-colors hover:text-[#1f3522] hover:decoration-current"
+                      >
+                        {link.label}
+                        <span aria-hidden="true">→</span>
+                      </Link>
+                    ),
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
-    </main>
+    </div>
   )
 }

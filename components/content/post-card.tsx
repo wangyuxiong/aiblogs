@@ -6,20 +6,10 @@ import { motion } from 'framer-motion'
 import { Clock, MapPin } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { getCategoryLabel } from '@/lib/categories'
-
-type Post = {
-  slug: string
-  title: string
-  excerpt: string
-  date: string
-  category: string
-  location?: string
-  coverImage?: string
-  readingTime: number
-}
+import type { PostListItem } from '@/lib/posts'
 
 interface PostCardProps {
-  post: Post
+  post: PostListItem
   variant?: 'large' | 'small'
 }
 

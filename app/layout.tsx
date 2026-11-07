@@ -5,28 +5,26 @@ import '@fontsource/playfair-display/400.css'
 import '@fontsource/playfair-display/700.css'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
+import { site } from '@/lib/site'
 import './globals.css'
 
-const SITE_URL = 'https://mind-keeper.com'
+const SITE_URL = site.url
 
 export const metadata: Metadata = {
   title: {
-    default: 'Mind Keeper | AI 学习日刊',
+    default: site.title,
     template: '%s | Mind Keeper',
   },
-  description: 'AI 学习日刊：每天精选模型发布、Agent 工具、研究进展与行业动态，用最短时间了解 AI 前沿',
+  description: site.description,
   metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: '/',
-    types: {
-      'application/rss+xml': '/feed.xml',
-    },
   },
   openGraph: {
     type: 'website',
     locale: 'zh_CN',
     url: SITE_URL,
-    siteName: 'Mind Keeper',
+    siteName: site.name,
     images: [{
       url: '/images/og-default.png',
       width: 1200,
@@ -36,8 +34,6 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@mindkeeper',
-    creator: '@mindkeeper',
   },
   robots: {
     index: true,
@@ -50,9 +46,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: '', // TODO: add Google Search Console verification code
-  },
 }
 
 export default function RootLayout({
@@ -62,9 +55,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
+      <head>
+        <link rel="alternate" type="application/rss+xml" href={site.rss} />
+      </head>
       <body className="min-h-screen antialiased font-sans">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-gray-900 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white focus:shadow-lg"
+        >
+          跳到正文
+        </a>
         <Navbar />
-        <main className="min-h-screen">{children}</main>
+        <main id="main-content" tabIndex={-1} className="min-h-screen">
+          {children}
+        </main>
         <Footer />
       </body>
     </html>
