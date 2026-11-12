@@ -1,0 +1,87 @@
+---
+title: "AI 学习日刊 · 2026-11-12"
+excerpt: "今日 6 条技术与产品动态：Runway 开源 27B 世界动作模型 Praxis-1，权重采用 Apache 2.0 许可；百度发布 ERNIE 5.5 Flash Preview，权重将于 11 月 25 日前开源；Google 发布 Gemini Decisions API 与 Gemini…"
+date: "2026-11-12"
+category: ai-daily
+tags: ["AI日报", "AI动态", "技术与产品", "模型与技术", "产品与工具", "研究进展", "实用技巧"]
+coverImage: "/images/ai-daily-cover.svg"
+isDraft: false
+isFeatured: false
+---
+
+> 今日聚焦：Runway 开源 27B 世界动作模型 Praxis-1，权重采用 Apache 2.0 许可；百度发布 ERNIE 5.5 Flash Preview，权重将于 11 月 25 日前开源。
+
+---
+
+## 模型与技术
+
+### [Runway 开源 27B 世界动作模型 Praxis-1，权重采用 Apache 2.0 许可](<https://runwayml.com/news/company-news/praxis-1-is-now-available>)
+
+- **来源**：Runway：News（网页）
+- **发布**：11-12 07:25（北京时间）
+- **摘要**：Runway 宣布世界动作模型 Praxis-1 以 Apache 2.0 开放权重面向所有人开放。该模型为 27B 参数 MoE 扩散 Transformer，同时预测视频与动作，在 NVIDIA RoboLab-120 榜单以 46.2% 成功率居首，超过 FLUX 3 Action（42.9%）、Cosmos3 Nano（36.8%）和 π0.5（28.0%）。
+- **推荐理由**：原文给出 RoboLab-120 榜单具体成绩、开源范围和适配方式，读者可以据此评估它在自有硬件上的部署可行性。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/bx3sq4dxfqblyztkuiktiz0wv>)
+
+### [百度发布 ERNIE 5.5 Flash Preview，权重将于 11 月 25 日前开源](<https://ernie.baidu.com/zh/release/ernie-5-5-flash-preview/>)
+
+- **来源**：百度文心 ERNIE 官方博客
+- **发布**：11-11 00:00（北京时间）
+- **摘要**：百度发布 ERNIE 5.5 Flash Preview，是基于此前 Base 模型的首个后训练版本，总参数 280B、激活参数 14B，支持 1M 上下文。模型 API 已在千帆平台上线，权重将于 11 月 25 日前开源；官方展示了游戏开发、3D 建模、知识工作、视频创作等 Agent 场景成果，并称该版本为后训练中间版本，正式版仍将持续优化。
+- **推荐理由**：官方给出总参 280B、激活 14B、1M 上下文等规格和基准对比，可据此评估该模型在编码与 Agent 任务上的定位。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/qd3f4j2hd0t98tqf28iv7pu2j>)
+
+## 产品与工具
+
+### [Google 发布 Gemini Decisions API 与 Gemini Decision 1 模型，专注快速多模态封闭式决策](<https://blog.google/innovation-and-ai/technology/developers-tools/gemini-decisions-api/>)
+
+- **来源**：Google Blog：AI（RSS）
+- **发布**：11-12 02:00（北京时间）
+- **摘要**：Google 推出 Gemini Decisions API，由新模型 Gemini Decision 1 驱动，可在 150-250ms 端到端延迟内对文本、图像、音频、视频和 PDF（最多 256K tokens）一次性评估最多 1000 个是/否、多选和评分题。
+- **推荐理由**：原文给出延迟、价格和基准对比等具体数据，读者可以据此评估这个封闭式决策接口是否适合替代自训分类器。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/r8hsm3m3munjwk1n3u885zszw>)
+
+## 研究进展
+
+### [Anthropic 发布 MAMUBench：单一智能体协调在四类环境中均胜过每个用户各自的智能体团队](<https://alignment.anthropic.com/2026/worse-together/>)
+
+- **来源**：Anthropic：Alignment Science Blog（网页）
+- **发布**：11-11 08:00（北京时间）
+- **摘要**：Anthropic Fellows Program 团队构建四个多用户多智能体模拟环境（共享 API token 预算、诊所日历、团体订餐或旅行预订、合并队列），测试 Anthropic、OpenAI 和 Alibaba 的前沿模型，并发布其中三个环境作为基准 MAMUBench。
+- **推荐理由**：Anthropic 用四个模拟环境测出多用户多智能体团队的协调失败模式，并发布 MAMUBench 供社区复测。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/z9u4n1e7zfapxjozcn97quhdp>)
+
+## 实用技巧
+
+### [OpenRouter 实测六模型并给出四层防护，解决 AI Agent 无限循环烧钱问题](<https://openrouter.ai/blog/tutorials/ai-agent-infinite-loop/>)
+
+- **来源**：OpenRouter：Announcements（RSS）
+- **发布**：11-12 08:00（北京时间）
+- **摘要**：OpenRouter 发布教程，讲解 AI Agent 因工具反复失败而陷入无限循环的成因，并给出四层防护：doom-loop 检测、loopKey 参数归一化、stopWhen 步数与成本上限、API key 信用额度。
+- **推荐理由**：原文用六个模型的实测数据给出防止 Agent 死循环的四层防护，含配置细节和成本对比，方法可直接迁移到自己的 Agent 代码。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/vq9nwgwhtm31cgoliyb7ydyde>)
+
+### [Claude Code 中如何选择 Fable 5.2 与 Opus 等模型](<https://www.youtube.com/watch?v=C33hJGt-ySg>)
+
+- **来源**：Claude：YouTube（RSS）
+- **发布**：11-12 01:30（北京时间）
+- **摘要**：Claude 发布视频教程，讲解在 Claude Code 中何时使用 Fable 5.2、Opus 5.5，何时降级到 Sonnet 5.5 或 Haiku 5.5，以及如何把一个任务拆分给多个模型。视频覆盖复杂编码与开放式技术工作、低成本明确任务等场景，并提供在自有任务上测量各模型表现的指南链接；可用性与用量限制因套餐而异。
+- **推荐理由**：官方给出在 Claude Code 中按任务复杂度和成本在 Fable 5.2、Opus 5.5、Sonnet 5.5、Haiku 5.5 间选择的场景划分，并提供自测指南链接。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/ep5oqt7m4l7gn3tqieilznmuk>)
+
+---
+
+## 📌 关于 AI 学习日刊
+
+**AI 学习日刊**每天从公开信息中筛选 AI 技术与产品动态，按主题整理，帮助你用最短时间了解行业前沿。
+
+**数据来源**：[AIHOT](https://aihot.news) 公开 API（匿名只读），本期收录 6 条。标题与摘要来自第三方信源，请以原文为准。
+
+- 🌐 网站：https://mind-keeper.com/daily
+- 📡 RSS：https://mind-keeper.com/feed.xml
+
+---
+
+*本文由脚本自动抓取整理，如有疏漏欢迎指正。*
+
+{/* generated-by: scripts/aihot-daily.py */}
