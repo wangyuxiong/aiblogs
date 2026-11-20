@@ -1,0 +1,129 @@
+---
+title: "超级智能体的架构真相：模型之外，工程之内"
+excerpt: "拆解 Manus、Claude Code、Deep Research、Devin 背后的共同架构范式：一个简单循环，以及把上下文当稀缺资源管理的工程法则。模型是涨潮，架构是船。"
+date: 2026-11-19
+category: ai-tutorial
+tags: ["AI Agent", "架构", "上下文工程", "Manus", "Claude Code"]
+isDraft: false
+coverImage: "/images/superagent-architecture-cover.png"
+---
+
+# 超级智能体的架构真相：模型之外，工程之内
+
+> 拆解 Manus、Claude Code、Deep Research、Devin 背后的共同架构范式：一个简单循环，以及让它真正能干活的工程法则。
+
+![封面：超级智能体的架构真相](/images/superagent-architecture-cover.png)
+
+2026 年 4 月，一篇论文做了件挺"不浪漫"的事：把 Claude Code 的源码逐层拆开，看这个当红编码智能体到底是怎么搭的。结论有点祛魅：核心是一个简单的 while 循环，调用模型，执行工具，把结果喂回去，重复。真正的代码量在循环外围：七种模式的权限系统、五层上下文压缩管线、四种扩展机制（MCP、插件、技能、钩子）、子代理委派，以及只追加的会话存储。
+
+别急着失望。把 Manus、OpenAI Deep Research、Devin 摆在一起看，会发现同样的形状。行业对 agent 的定义也收敛到了同一句话：LLM 在循环中自主使用工具。
+
+那么能力差距到底从哪来？读完这几家公司的工程博客和论文后，我的答案是：**Super Agent 的能力跃迁，主要来自把上下文当作稀缺资源来工程化管理，以及把"模型做不到什么"的假设持续外置成可替换的系统组件。**模型是涨潮，架构是船。这篇文章把这条船拆开看。
+
+## 一、骨架：一个循环，和它的外围系统
+
+先厘清词汇。Anthropic 在 2024 年底把 agentic 系统分成两类：workflow 是 LLM 和工具按预定义代码路径编排，agent 是 LLM 动态主导自己的过程和工具使用。前者有五种常见模式：提示链、路由、并行化、编排者-工作者、评估者-优化者。这个光谱今天依然有用，大多数"agent 产品"其实落在光谱中间，而不是终点。
+
+Claude Code 站在 agent 这一端，但它的外围系统相当"workflow"：权限检查是硬规则，上下文压缩是固定管线。那篇源码分析论文把架构驱动力归纳为五种人类价值（人类决策权、安全与隐私、可靠执行、能力放大、上下文适应性），再往下落到十三条设计原则。横向对比更能说明问题：同一个设计问题，在不同部署语境下答案不同。Claude Code 强调逐动作的安全审查，OpenClaw 强调边界级的访问控制。架构没有标准答案，只有约束条件。
+
+到 2026 年，Anthropic 在 Managed Agents 里把这层思路又推进了一步：把 agent 虚拟化成三个接口，session（只追加的事件日志）、harness（调用模型并路由工具调用的循环）、sandbox（执行环境）。他们用了操作系统的类比：process 和 file 抽象比硬件长寿，`read()` 不关心底下是 1970 年代的磁盘组还是现代 SSD。同样，这三个接口应该比任何具体的 harness 实现都长寿。这是一个 meta-harness：对接口的形状有主见，对接口背后跑什么没有主见。
+
+![Super Agent 架构分层：模型循环与外围系统](/images/superagent-architecture-layers.png)
+
+## 二、上下文经济学：KV-cache 与注意力预算
+
+Manus 给过一笔最直白的账：agent 场景的输入输出 token 比约 100:1，严重偏向 prefill。以 2025 年 7 月 Claude Sonnet 的定价，缓存命中的输入每百万 token 0.30 美元，未命中 3 美元，十倍价差。所以他们把 KV-cache 命中率视为生产级 agent 最重要的单一指标，直接决定延迟和成本。
+
+由此推出三条纪律：前缀稳定（在 system prompt 开头放秒级时间戳等于自毁缓存）；上下文只追加、序列化确定性（JSON key 顺序不稳会静默破坏缓存）；必要时显式标注缓存断点。
+
+但缓存只解决成本，不解决智力。Anthropic 的上下文工程文章指向更底层的约束：注意力预算。Transformer 的注意力是成对计算的，n 个 token 就有 n² 个关系；训练让模型能处理长序列，但每个 token 分到的"注意力预算"越来越薄。Chroma 的实验把这种现象称为 context rot：上下文越长，召回和推理质量越差。它是渐变而非悬崖。这正是它阴险的地方，你不知道自己什么时候越过了线。
+
+所以指导原则是：找到最小的高信号 token 集合，最大化期望结果的概率。注意不是越短越好，过度精简的 system prompt 会丢掉必要指引，要的是"正确的海拔高度"。
+
+这条原则在多代理场景有个反直觉的推论。Cognition 发现，让 Devin 审查自己写的 PR，效果最好的条件竟是审查者与编码者事先零共享上下文。Devin Review 平均每个 PR 抓出 2 个 bug，约 58% 是严重的（逻辑错误、边界缺失、安全漏洞）。为什么？编码代理工作了几个小时，上下文里塞满仓库阅读、命令输出和失败尝试；审查代理从干净的 diff 出发，从实现反向推理，甚至能质疑用户指令本身的错误。干净的上下文买回了注意力。
+
+## 三、动作空间与外置记忆
+
+工具爆炸是第一个陷阱。尤其 MCP 让用户自配工具之后，几十上百个工具塞进上下文，模型开始选错动作。Manus 的观察很直接：重武装的 agent 会变笨。
+
+直觉解法是按任务阶段动态增删工具，但这有两个致命问题。其一，工具定义序列化后位于上下文前部，任何改动都让后续全部 KV-cache 失效；其二，历史里的动作和观察引用了已不存在的工具，模型会困惑，甚至幻觉出不存在的动作。
+
+Manus 的答案是 mask, not remove：不改工具定义，用上下文感知的状态机管理可用性，通过 logits 掩码或响应预填充约束解码。他们还刻意统一动作命名前缀（browser_、shell_），这样按组约束就不需要有状态的 logits 处理器。
+
+第二个陷阱是记忆。128K 窗口仍然不够，甚至可能是负担：观察巨大（一个网页、一份 PDF），超过一定长度性能退化，长输入即使有缓存也贵。更根本的是，不可逆压缩有个无法消除的风险：你无法预知哪个观察在十步之后变得关键。
+
+于是 Manus 把文件系统当作终极上下文：无限大、持久、agent 可直接操作。压缩必须可恢复：网页内容可以丢，但保留 URL；文档内容可以省，但保留沙箱内路径。Claude Code 走的是混合策略：CLAUDE.md 预加载，其余靠 glob/grep 即时检索，让模型像人一样渐进式探索。文件名、目录结构、时间戳本身就是信号。
+
+还有两个小机制值得单独说。一是 todo 复诵：Manus 的复杂任务平均约 50 次工具调用，长循环容易跑题；持续更新 todo.md 并勾选，本质是把全局计划复诵到上下文末尾，推入近期注意力范围，对抗 lost-in-the-middle。二是保留错误：失败轨迹和堆栈留在上下文里，让模型隐式更新信念、降低重蹈覆辙的概率。擦除错误就是擦除证据，而错误恢复恰恰是真正 agentic 行为的标志之一。
+
+顺带提防 few-shot 反噬：上下文充满相似的"动作-观察"对时，模型会模仿那个节奏。Manus 举的例子是批量审 20 份简历陷入重复模式，解法是引入结构化多样性：不同的序列化模板、措辞、顺序噪声。
+
+## 四、长任务：窗口之外的状态
+
+任务超过单个窗口怎么办？Anthropic 总结了三件套，各有适用场景：compaction 适合对话流（Claude Code 的做法是摘要历史、保留架构决策和未解决的 bug，外加最近访问的 5 个文件；先调召回率再调精确率）；结构化笔记适合有迭代里程碑的任务（NOTES.md、todo 清单，以及随 Sonnet 4.5 公测的 memory 工具）；子代理适合并行探索（子代理可以消耗几万 token 去探索，只回传一两千 token 的摘要）。
+
+但三件套有个共同弱点：都是不可逆的取舍。Managed Agents 的解法是把"可恢复的存储"和"上下文策略"分开：session 是活在窗口之外的只追加事件日志，`getEvents()` 支持位置切片，从上次停读处续读、回退到某时刻前几个事件、重读某个动作前的上下文。取回的事件可以在 harness 里任意变换后再进窗口。存储只保证持久和可查询，做什么上下文工程留给 harness，因为没人能预测未来的模型需要什么。
+
+这个设计还带来一个工程红利：脑手分离。最初所有组件挤在一个容器里，容器成了"宠物"：挂了会话就丢，卡了要人肉救活，调试还得进容器接触用户数据。解耦之后，harness 像调用其他工具一样调用沙箱：`execute(name, input) → string`。容器挂了只是一个工具调用错误，回传给模型，重试就用 `provision({resources})` 重建。harness 自己也 cattle 化：崩溃后 `wake(sessionId)` 取回事件日志，从最后一个事件恢复。
+
+性能收益很直接：不需要容器的会话不再付容器启动成本，首 token 延迟 p50 降约 60%，p95 降超 90%。
+
+## 五、编排之争：单线程，还是多智能体
+
+这是全行业分歧最大、也是这两年立场变化最快的领域。
+
+2025 年 6 月，Cognition 的《Don't Build Multi-Agents》给出两条原则：共享完整的 agent 轨迹而非单条消息；动作携带隐式决策，并行写者的隐式决策会互相冲突。反例很生动：把"做 Flappy Bird"拆成背景和鸟两个子任务，子代理把背景做成了 Super Mario 风格。即使共享原始任务，并行子代理仍会做出冲突的风格决策。所以他们主张默认单线程线性 agent，超长任务加一个专职压缩模型。
+
+第二天，Anthropic 发布多智能体研究系统，数据指向另一边：Opus 4 主导 + Sonnet 4 子代理，在内部研究评测上比单个 Opus 4 高 90.2%。但细读会发现：在 BrowseComp 上，token 用量单独解释了 80% 的性能方差；多智能体系统消耗约 15 倍于聊天的 token。换句话说，增益很大程度是拿算力"买"来的，只在价值足够高、可并行、读密集的任务上划算。他们明确说编码不适合：多数代码任务真正可并行的部分很少，子代理之间又缺乏共享上下文。
+
+两边其实比表面上更有共识：首个适用领域都是只读并行。Anthropic 的子代理做研究、回传摘要；Cognition 的 Devin 调 Deepwiki 子代理获取代码库上下文。本质都是"更聪明的工具调用"。
+
+到 2026 年春，Cognition 发了续篇，立场演化成更精确的表述：**写入保持单线程，智能可以多路。**两个真正跑通的模式：
+
+一个是前面提过的生成-审查循环，关键在通信桥：主代理用完整的用户上下文过滤审查发现，防止死循环和越界干活。
+
+另一个是 Smart Friend：小模型当主代理，把大模型作为顾问工具调用。难点是"弱模型怎么知道自己到了极限"。他们的 80/20 解法是共享主模型完整上下文的 fork、问宽问题（"我该怎么办？"）；大模型回话要"超范围"：缺文件知识时指示主代理去查了再问，而不是编造理论，还要主动给出没被问到的关键指导。诚实的结论是：SWE-1.5 当主代理不够强，质量上限由主代理决定；但跨前沿模型组合（Claude + GPT）在生产环境有效，委派逻辑变成了能力路由器，谁调试强、谁视觉推理强、谁写测试强，就路由给谁。
+
+更大范围的委派，Devin 已经上线 manager-子代理结构，坑全在通信上：manager 过度规定细节、代理误以为与子代理共享状态、跨代理通信默认不发生（模型没在需要它的环境里训练过）。他们的判断是：无结构蜂群是干扰项，实用形态是 map-reduce-and-manage，manager 拆分、children 执行、manager 综合汇报。
+
+![编排决策：写入冲突与可验证性两个维度](/images/superagent-architecture-orchestration.png)
+
+我的综合判断是：别站队，看两个变量，写入是否冲突、任务是否可验证。只读研究可以并行、拿 token 换质量；代码写入默认单线程，用干净上下文的审查和顾问式智能注入来增强；只有成功判据简单可验证的场景（编译器、测试套件），才值得尝试大规模并行写入。
+
+## 六、安全与可靠性：假设会过时
+
+两个值得抄作业的细节。
+
+第一，凭据永不可达沙箱。耦合设计里，不可信代码和凭据同容器，prompt injection 只需说服模型读自己的环境变量。Managed Agents 的结构性修复：Git token 在初始化时接进 remote，push/pull 全程不碰 token；MCP 的 OAuth token 存 vault，专用代理按会话 token 取凭据调用，harness 全程不知道凭据。Deep Research 有类似的系统级限制：不允许导航到或构造任意 URL，堵住把 API key 塞进 URL 参数外泄的路。缓解后，prompt injection 攻击成功率从 1.5–18.5% 降到 0–2.6%。
+
+第二，harness 的假设会过期。Sonnet 4.5 会在感知上下文上限临近时提前收尾任务（他们称之为"context anxiety"），harness 加了上下文重置来修复；换到 Opus 4.5，这个行为消失了，重置逻辑成了死重。这是 agent 时代的 Bitter Lesson：你今天为模型弱点写的每个补丁，明天都可能变成债务。所以 meta-harness 的思路值得留意：让组件可替换，让接口稳定。
+
+## 七、两条路线，一个方向
+
+最后交代一条路线之争。OpenAI 把 agentic 能力训进模型：Deep Research 由为浏览优化的 o3 早期版本驱动，在浏览任务上做强化学习，从客观可判分的任务到配评分细则的开放任务，用思维链模型当评分器。Manus 押注前沿模型的 in-context learning 能力，在循环外围做工程，迭代以小时计而非周计。两条路线并不对立。Cognition 的结论是，剩下的通信问题终究是训练问题，下一代模型会带着多代理协作的场景一起训练。工程先行，训练跟进，这大概是未来两年的常态。
+
+给架构师的设计清单，把这次调研压缩成七条：
+
+1. 把 KV-cache 命中率当一等指标：稳定前缀、只追加、确定性序列化。
+2. 工具用掩码管理，不要动态删除。
+3. 记忆外置到文件系统与会话日志，压缩必须可恢复。
+4. 管理注意力预算：最小高信号集合、todo 复诵、保留错误。
+5. 编排看写入冲突与可验证性，不看潮流。
+6. 凭据永不进沙箱。
+7. 定期审计 harness 假设，模型变强就删死重。
+
+Anthropic 设计 Managed Agents 时引用了《Unix 编程艺术》里的一句话：为"尚未想到的程序"设计系统。五十年前操作系统用 process 和 file 抽象做到了这件事。今天的 Super Agent 架构在做同一件事。模型一直变，循环保持简单，沉淀下来的是那层比任何具体模型都长寿的接口与工程纪律。
+
+---
+
+## 参考来源
+
+1. [Context Engineering for AI Agents: Lessons from Building Manus](https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus)（Manus，2025-07-18）
+2. [Dive into Claude Code: The Design Space of Today's and Future AI Agent Systems](https://arxiv.org/abs/2604.14228)（arXiv:2604.14228v3，2026-10）
+3. [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)（Anthropic，2024-12）
+4. [How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system)（Anthropic，2025-06）
+5. [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)（Anthropic，2025-09-29）
+6. [Don't Build Multi-Agents](https://cognition.com/blog/dont-build-multi-agents)（Cognition，2025-06）
+7. [Multi-Agents: What's Actually Working](https://cognition.com/blog/multi-agents-working)（Cognition，2026 年春）
+8. [Deep Research System Card](https://deploymentsafety.openai.com/deep-research)（OpenAI，2025-02-25）
+9. [Scaling Managed Agents with stable interfaces](https://www.anthropic.com/research/managed-agents)（Anthropic，2026）

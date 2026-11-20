@@ -1,0 +1,89 @@
+---
+title: "DeepSeek Harness 的 Super Agent 是怎么跑起来的：一份源码级拆解"
+excerpt: "解开 DSH 2.0.22-next 的安装包，看 Super Agent 范式如何落地成代码：可插拔循环、事件溯源会话、五层上下文防线、四种编排形态与内核级沙箱。能力在循环之外。"
+date: 2026-11-20
+category: ai-tutorial
+tags: ["AI Agent", "DeepSeek Harness", "源码分析", "上下文工程"]
+isDraft: false
+coverImage: "/images/dsh-superagent-composition.png"
+---
+
+# DeepSeek Harness 的 Super Agent 是怎么跑起来的：一份源码级拆解
+
+> [上一篇](/blog/superagent-architecture)我们拆了 Manus、Claude Code、Deep Research 的共同范式：一个简单循环，加一套把上下文当稀缺资源管理的工程法则。这篇换个对象：把我正在运行的这个 harness（DeepSeek Harness，简称 DSH）的安装包解开，看范式落地成代码时长什么样。版本 2.0.22-next，核心包 0.2.2-rc.1，343 个插件包。
+
+先把结论放在前面：**DSH 没有"超级智能体"这个特殊组件。它的 super agent 就是一个普通循环，被三百多个可替换插件围起来之后涌现出来的运行形态。**这恰好是上一篇文章论点的工程印证：能力在循环之外。
+
+## 一、组合：循环只是配置文件里的一行
+
+DSH 跑在 Cordis 插件框架上。打开标准组合 `dsh-base/cordis.patch.yml`（535 行），你会看到一份挂载清单：LLM 适配器、会话持久化（jsonl 写日志 + sqlite 查询）、工具注册表与双执行器、沙箱三件套加人工审批、指令与技能注入、目标续轮驱动器、子代理与 workflow、压缩与 spill、token 计量……而核心循环 `dsh-agent-loop` 只是其中一行，和 `tool-todo`、`web-search` 平级。
+
+这就是"meta-harness"思路的极端版本：连循环本身都是可插拔的。`dsh-agent-loop` 的 README 写得很直白：只有当标准的"call model, run tools, repeat"生命周期不够用时，才需要自定义 Agent 实现。桌面发行版再用一层 patch 做产品级增删，比如把上游的遥测插件显式禁用。架构决策被表达成组合配置，而不是代码分支。
+
+![DSH 运行架构：组合、循环与上下文防线](/images/dsh-superagent-composition.png)
+
+## 二、循环：事件溯源的 turn/step 状态机
+
+`dsh-agent-loop` 里的具体实现叫 `ReactLoopAgent`。每个 step 做的事：从会话日志派生历史（`deriveMessages()`，lib/index.js:1078），组装 prompt 和工具 schema，过 `agent/pre-step` 钩子，调 `prepareCall()` 校验路由，流式请求模型，执行工具批，然后**把所有被接受的事实先追加进会话日志，下一个 step 再从日志派生**。会话是只追加的事件日志，不是内存里的消息数组；崩溃恢复靠往日志里补 `interruptedTurnClosers` 这样的普通事件批，语义修复留在 agent 层。这是事件溯源（event sourcing）在 agent 上的直接应用：持久化不是循环的副产品，而是循环的地基。
+
+几个值得注意的工程细节：
+
+**并发与屏障。**工具批执行默认并发 10（`maxParallelToolCalls`，lib/index.js:1309），parallel-safe 的调用走有界滚动池，exclusive 调用形成屏障，结果按模型给出的顺序回传。并发是配置项，不是硬编码。
+
+**协作式取消。**被取消的流不会丢掉已经吐给用户的文字：它以 `interrupted: true` 的锚点落盘已交付前缀（lib/index.js:902），下一次请求会包含用户已经看到的内容。取消语义和持久化语义被统一了。
+
+**请求头继承，为 KV-cache 让路。**首个请求写全量 header；之后只有 config 或工具变化才写 changed envelope（prompt 不属于 header）；普通后续 step 和重试直接继承最新 header。配合 system prompt 的准入策略（支持 `in-history` 更新的路由可以追加 prompt 节点，不支持的路由在新 series 时把渲染 consolidate 到头部、旧节点逐个写空替换，lib/index.js:849-852），目的只有一个：让请求前缀尽可能稳定。上一篇里 Manus 把 KV-cache 命中率当第一指标，DSH 在循环层就把这个纪律制度化了。
+
+## 三、上下文工程：五层防线，各管一段
+
+DSH 的上下文管理不是一个"压缩功能"，而是一条按成本排序的防线：
+
+1. **计量先行。**`dsh-token-meter` 重放持久日志做确定性 token 估算，不调模型，产出 tokenUsage / contextPressure / contextBreakdown，供压缩、占用显示、遥测共用一个结果。先有准确的账，才有后面的决策。
+2. **大结果 spill。**`dsh-spill-policy` 把超大文本/图片结果按共享 token 预算只内联 head/tail，附完整结果的文件路径。模型想看全文，自己去读文件。文件系统当记忆，和 Manus 的做法同源。
+3. **工具结果剪枝。**`dsh-compaction-tool-result-pruner` 对超过 8192 字符的工具结果保留头 4096、尾 1024，中间插入 `[... tool result middle pruned ...]`（lib/index.js:8-13）。零模型调用，追加替换事件，原始事件仍留在只追加日志里。剪枝不销毁证据。
+4. **压力摘要。**`dsh-compaction-basic` 在压力达到 `min(窗口×0.8, 窗口−输出−65536)` 时触发，保留最新 16% 的原文，用一次额外模型调用把最老区间浓缩成摘要；上下文溢出报错后也会浓缩重试。它明确不能缩 system prompt、工具和会话前缀——前缀稳定优先于压缩率。
+5. **图片卸载。**`dsh-compaction-image-offload` 把超预算的旧图永久替换成"附件名 + 只读路径"文本。它的 README 里有一句很诚实的话：provider cache reuse ends at the first changed message。卸载图片会打断缓存复用，这个代价被写进了设计文档，而不是假装不存在。
+
+在这五层之外，还有一层外部代理（billion-context/ACP）在请求 transcript 层做更深的分块压缩与解压。我在源码里 grep 过：宿主包对 "billion-context" 零引用。边界很清楚：内置机制作用于会话事件层，外部代理作用于请求层，互不侵入。压缩策略本身也成了可替换组件。
+
+指令注入同样服务于前缀稳定：system prompt 由 `dsh-system-prompt` 按 order 拼 section，跨权限模式字节不变；而项目指令（AGENTS.md 链，每链预算 64KB）和运行时事实是以 user 角色的 `<system-reminder>` 消息追加进历史的。技能则只注入目录——名字加截断到 500 字符的描述，全文按需 load。三百多个技能如果全文进 prompt，注意力预算第一轮就破产了。
+
+## 四、编排与自治：四种把循环拉长变宽的方式
+
+单循环之外，DSH 给了四种扩展形态，各有明确的边界。
+
+**子代理：进程内派生，限额刻在配置里。**spawn 创建一个全新空上下文的子 Agent，prompt 必须自包含；fork 则继承父会话日志的一个"已完成 turn 前缀"快照：找最后一个 `turn/end` 事件截断，进行中的 turn 不带过去。fork 还刻意禁用模型选择变更，为的是让 KV-cache 前缀字节级复用。限额很保守：深度默认 1（子代理不能再派生），同时活跃子代理默认 8，满额直接拒绝、不排队。通信走邻接规则：父只能给直接子发消息，子只能回直接父；运行中的子收到消息是"转向"（steer），空闲的父收到消息是排队。中断本地子只取消当前 turn，排队消息保留、后代继续跑。取消的粒度被精确到了 turn。
+
+**workflow：把编排写成代码。**workflow 工具让模型写一段 JavaScript，在受限的独立 Node 进程里跑，脚本里只有六个冻结的全局钩子：`agent`、`parallel`、`pipeline`、`phase`、`log`、`args`。`agent()` 派一个子代理，`parallel()` 是 Promise.all 屏障，`pipeline()` 让每个条目独立穿过各阶段、没有跨阶段屏障。并发默认 `min(16, CPU核数−2)`，单次运行子代理总数上限 1000，防失控循环。失败语义分两级：普通子代理失败映射成 null 让脚本自己过滤，配置错误这类 fatal 错误直接杀死脚本。返回值必须是 lossless JSON：循环引用、函数、负零、稀疏数组一律拒绝。注意 vm 沙箱不是安全边界，真正的隔离靠 OS 进程；文档对此毫不含糊。这本质上是把"多轮工具调用"下沉成"一次代码执行"，省掉的是模型往返。
+
+**goal：制度化的自治续轮。**每个会话至多一个 goal，状态用事件溯源加 revision CAS 管理。round driver 的循环条件很克制：agent 整体空闲、无竞争输入、先做一次持久化 flush checkpoint（失败就解除武装）、等所有后代 settle，才排队下一条 `<goal_round>` 提示。轮数上限默认 256，且只有真正进入历史的 goal 消息消耗轮数，人类插话不消耗。安全阀有两道：自治状态下声明 blocked 必须连续 3 轮受阻，之前会被机械拒绝；create/edit/pause/resume 必须发生在含直接人类消息的 turn 里，子代理不能给自己造目标。会话恢复或 fork 后 goal 自动 disarmed，要人显式 resume。自治不是默认状态，而是被授权的状态。
+
+**ralph 与 schedule：另外两种拉长方式。**ralph 是固定脚本循环：每轮派一个全新的结构化输出子代理，对着同一个不可变目标干活，轮间只传一份有界 handoff（16KB 上限），父对话和旧子会话永不复制，共享 workspace 就是长期记忆。它的局限也写在明处：完成由 worker 自报，没有独立评估器。schedule 则是 Host 级定时服务，支持 cron/rrule 等七种触发，到点以 user 角色消息投递进会话，重启后只补最新错过的一次，至少一次投递语义；子代理被禁止创建定时任务。
+
+对照上一篇的编排之争：DSH 的子代理默认深度 1、并发 8，比 Anthropic 研究系统那种大规模并行保守得多；而 workflow 和 ralph 把"多智能体"变成了"一段代码"或"一个循环脚本"，写入冲突被进程边界和单写者结构天然化解。它没有站队单线程或多智能体，而是把编排形态做成了四种可选工具，各带各的限额。
+
+## 五、安全：内核级沙箱加一次性审批
+
+沙箱有三个模式：read-only / workspace-write / danger-full-access，部署默认 read-only。macOS 上走 Seatbelt：`sandbox-exec` 的 SBPL _profile 是 `(allow default)(deny file-write*)`，再对可写根逐个开 subpath 白名单（dsh-sandbox-local/lib/index.js:67-76）。bash 命令被内核级 confine；文件工具则走进程内的 canonicalize-contain 栅栏，README 明确标注后者"不是内核边界"。两条防线共享同一份 writableRoots，防止漂移。
+
+被拒绝的操作会带上 `[sandbox: file access denied under <mode> mode]` 标记回到模型手里；模型可以带 `sandbox_permissions` 和一句理由发起**一次性**重试，触发人工审批；没有可用的审批通道就 fail-closed。授权只覆盖那一次调用，不改变会话模式。"模型请求 → 人类决策 → 单次放行"被做成了协议，而不是提示词里的恳求。
+
+## 六、对照范式：DSH 的四个特色选择
+
+把上一篇的框架套回来，DSH 在每个层上都做了选择，其中四个值得单独点出来：
+
+- **事件溯源的会话。**日志是唯一事实源，投影、查询、压缩、崩溃修复全部从日志派生。代价是实现复杂度，收益是任何一层都可以独立重放和审计。
+- **双执行器。**native 执行器直接暴露全部工具；PTC（code-mode）执行器只暴露一个 `run_code` 和生成的 SDK，其余工具直呼即 UNKNOWN_TOOL。工具调用可以变成代码里的函数调用，批量编排省掉多轮模型往返。这是把"工具循环"的一部分下沉到运行时。
+- **压缩分层且外置。**宿主内五层防线管事件层，外部代理管 transcript 层，谁都不垄断"上下文管理"这件事。
+- **安全是协议不是提示词。**内核沙箱、fail-closed、一次性审批阶梯，把人类决策权做成了系统属性。
+
+模型是涨潮，架构是船。DSH 这艘船的特点是：每一块船板都写着"可替换"，连循环和压缩策略也不例外。
+
+## 参考
+
+- 源码：/Applications/DSH NEXT.app/Contents/Resources/app.asar（v2.0.22-next），解包调研
+- @deepseek-ai/dsh-agent-loop README 与 lib/index.js
+- @deepseek-ai/dsh-base/cordis.patch.yml
+- @deepseek-ai/dsh-compaction-basic、dsh-compaction-tool-result-pruner、dsh-compaction-image-offload、dsh-spill-policy、dsh-token-meter README
+- @deepseek-ai/dsh-sandbox-local、dsh-sandbox-policy、dsh-fs-sandbox、dsh-user-approval README 与 lib/index.js
+- @deepseek-ai/dsh-system-prompt、dsh-agent-instructions、dsh-skill、dsh-tool-skill README 与 lib/index.js
