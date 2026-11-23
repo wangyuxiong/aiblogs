@@ -1,0 +1,135 @@
+---
+title: "拆解 DeepSeek Super-agent：Router 与 Worker 双层架构，到底在拆什么"
+excerpt: "结合官方长文与开源原型源码，拆解 Router/Worker 双层架构：订阅直通、两级过滤、单写者状态机与压测数据，以及长文与原型之间的差距清单。"
+date: 2026-11-23
+category: ai-tutorial
+tags: ["AI Agent", "DeepSeek", "Super-agent", "架构", "多智能体"]
+isDraft: false
+coverImage: "/images/dsh-router-worker-cover.png"
+---
+
+# 拆解 DeepSeek Super-agent：Router 与 Worker 双层架构，到底在拆什么
+
+![封面](/images/dsh-router-worker-cover.png)
+
+2026 年 10 月 31 日晚上，DeepSeek Harness 团队在公众号发了一篇长文《Super-agent 设计探索：迈向更自主的 Agent 系统》，同晚把研究原型 dsh-superagent-prototype 推上 GitHub，MIT 协议。长文开头先划清界限：这是架构思路探讨，不是现有产品功能介绍。仓库 README 也补了一句：公开版不等于内部版，长文里的一部分设计是未来方向，原型里没有。
+
+这两句免责声明很重要，后面会反复用到。但撇开营销噪音，这篇长文回答了一个真问题：当模型已经能独立干完一个任务，为什么我们还是觉得 agent 不好用？
+
+官方给的答案是注意力。一个人通常只能同时跟进 3 到 5 个活跃 Session，会话一多就记不清哪个在干什么、哪个在等自己验收。于是"单任务的上限取决于模型能力，多任务的上限取决于人的注意力"。Super-agent 想做的，是把会话管理这件脏活从人手里接过去，让人只留在决策和验收两个节点上。
+
+Router 与 Worker 双层架构就是为此提出的核心结构。本文结合官方长文、开源原型的 docs 与源码、以及两篇独立拆解的交叉核验，把它拆开看：拆的是什么，省的是什么，代价是什么，以及哪些部分今天还只存在于纸面。
+
+## 一、双层架构：把两种上下文生命周期分开
+
+先看它要解决的权衡。所有事件塞进同一个 Session，上下文最连续，但单个 ReAct 循环串行执行，任务排队、中间细节互相污染。每条事件新开一个 Session，吞吐最高，但任务之间一旦有关联就彼此割裂，而且多个会话各自回复用户，交互直接混乱。
+
+双层的做法是把"维护全局连续性"和"高并发执行"拆到两层。Router 层常驻，承接所有入口的人类交互，充当全局的序点（Sequence Point）、协调点和记忆。它不执行具体任务，长文甚至说它可以不配备 Bash 工具。Worker 层每任务一个会话，上下文隔离，挂满执行工具，配能力最强的模型，因为代码质量由它决定。Worker 不直接对人说话，推理和工具调用不外泄到信道，只向 Router 汇报，由 Router 统一回复。
+
+这里最容易误读的一点：它和 Agent Teams 不是一回事。Agent Teams 的 Lead 拆解的是单个复杂任务内部的步骤，子步骤耦合紧，Lead 必须深入细节、高频协调，自己背很重的推理负载。Router 只管任务之间的高层关联与分派，不碰单任务内部。长文给了一个等价判据：如果你用提示词约束一个 Agent Team 的主会话不亲自干活、只对外交互和分派，那它就是双层架构。区分两者的是职责边界，会话数量说明不了问题。
+
+第二个误读是"中心节点必成瓶颈"。官方的回答是批处理：Router 上一轮推理期间到达的事件会积压，下一轮合并成一次调用。Router 每步长输入短输出，合并主要增加 Prefill，而 Prefill 可并行，所以单请求耗时增长远慢于批大小。事件越堵，摊到每个决定上的推理时间反而越低。上限是上下文长度和模型一轮能准确处理多少条事件。第七节会用压测数据验证这一点。
+
+还有两个细节值得记住。其一，"双层"是逻辑职责划分，每层内部不必是单个 Session：Router 可以多层过滤或水平切分，Worker 内部可以再建 Subagent、甚至本身就是一个 Agent Team，对上层透明。其二，同层 Worker 之间通常不直接通信。冲突往往发生在同一个 PR 这类共享环境里，只要两个 Worker 订阅了同一个 Thread，就会收到相同事件，有机会自己发现冲突；少数跨任务协同才由 Router 中转。
+
+![Router 与 Worker 双层架构与订阅直通](/images/dsh-router-worker-architecture.png)
+
+## 二、事件驱动：过滤、直通与上下文经济学
+
+双层解决了会话组织，主动性则来自驱动方式的改变：输入不再是人逐条键入的提示词，而是环境事件，统称 Trigger。群消息、邮件、日程、评审评论、CI 结果都算。
+
+真实事件流高噪音、低触发率，每条都过模型判断，延迟和算力都扛不住。于是借 Fast Path / Slow Path：来源、群范围、白名单这类确定性条件固化成代码，直接判"响应明确请求 / 作为候选 / 忽略"；候选才进模型这条 Slow Path，按提示词策略决定要不要动手。
+
+过滤之后还有路由问题。已分配任务的后续事件如果仍经 Router 转发，全局节点照样被压垮。所以 Fast Path 思想再用一次：Router 只负责新任务冷启动和跨任务协调，已确定归属的后续事件由程序直送对应 Worker。这就是订阅直通。直通不等于 Router 失明：长文明确说 Router 层仍可观测所有事件以掌握全局状态，省掉的是逐事件转发与决策，可见性照旧保留。Worker 创建时订阅所在 Thread（同一 PR、同一 IM 话题下的连续事件），之后该 Thread 的事件绕开 Router。订阅是多对多的，这正是上一节 Worker 间免通信的基础。
+
+事件进入会话后，注入多少信息是第三个问题。官方的比喻是把上下文窗口当 Cache 管，借编译器术语：Inline，把近期大概率要用的信息内联进去，比如相邻消息、相邻评审评论，省一次工具调用；Spill，超长低频内容截断留摘要和续读入口，用时再读。每个对象（Trigger、Thread、Worker 会话）带 ID，注入时内联相关对象 ID，形成引用图。靠这张图做链式召回：当前消息到所在 Thread，到负责它的 Worker，再到该 Worker 关联的另一个评审 Thread。Router 跑久了找不回旧任务的问题，靠这个缓解。长文那句"浪费上下文窗口，就是浪费模型的智能"，是这一节的题眼。
+
+同一节里还有投机执行：借 CPU 的概念，在不确定结果会不会被采用时先后台尝试。内部实例的策略是"静默复现并修复"，群里有人反馈问题，先后台复现、找修法，确认问题且找到简单修法才交出结果，否则全程不出声。效果是群里还在讨论方案，修复 PR 已经提了。代价是多烧后台算力，换人少等、少介入。
+
+## 三、面向人的交互与持久在线
+
+交互层解决两件事。一是全双工：经典 ReAct 里一次同步 run() 调用会阻塞循环，期间会话接不了新输入。改法是耗时命令异步化，start() 立即返回"已启动"，stop() 可取消，结果作为新事件投递回会话。长文明确说 DeepSeek Harness 已实现这套异步 ReAct，但未默认开启。二是多信道匹配：IM 只在需要决策或验收时说话，验证过的硬规定是单次回复不超过 100 词；GitHub、邮件这类异步信道才写结构化完整说明。把终端那套冗长推理原样搬进群聊，就是信息过载。
+
+持久在线靠两步解耦。第一步计算与状态分离：推进 Agent Loop 的计算放云端无状态容器，可水平扩展、重启、替换；Session 等状态存数据库，连续性由存储保障。第二步计算与执行环境分离：执行环境留在原地，端侧只装一个不存会话状态的轻量 daemon，接命令、回结果。长文承认这与 Anthropic 提出的"脑手分离"（Decoupling the brain from the hands）思路一致，区别在于 Anthropic 托管沙箱，而 DeepSeek 要接用户自己那台时不时离线、有未提交修改和本地凭据的开发机。可以叫 BYOM：Bring Your Own Machine。
+
+最后是 Watchdog：主系统之外单独一个定时唤醒的会话，构成外部控制回路。它看两类东西，基础设施故障（接口报错之类），以及让模型判断每个 Worker 有没有实质进展、方向有没有跑偏。官方的理由很实在：许多异常并非进程崩溃，而是模型在执行中陷入无效循环或偏离目标，存活探测探不出来。而且这个 Watchdog 自身具备完整工具能力，可以用自然语言询问故障原因、在线修正主系统行为，比如增删提示词、调整触发规则。
+
+## 四、开源原型：一个仓库切片里的双层
+
+长文描述的是内部系统，开源原型是它落在"单个 GitHub 仓库 + 可选飞书群"上的能跑切片。TypeScript，v0.1.0，依赖 dsh 0.2.1 预发布、Node 22.19+ 或 24+、tmux 和 GitHub CLI。仓库只有一个提交，README 自认风格不一致、可能有 bug、大量工程由编程 agent 完成。读它是为了看设计怎么落地，别当生产代码审。先交代术语：仓库里的正式名字是 main Session 与 Executor Session（preset 叫 dsh-superagent-router 和 dsh-superagent-worker），Router/Worker 是长文的说法，本文沿用为转述。
+
+核心域是五个概念：Source（事件来源）、Thread（连续事件流）、Eval（一轮研判）、Mandate（授权）、Subscription（订阅），再加上承载执行的 Ticket（工单）与 Assignment（派工）。docs/001 里有一句值得抄进任何 agent 系统设计文档的话："A person is not a domain concept." 人只以发送者身份和停止命令的形式出现，不是系统建模的实体。
+
+流程是：GitHub 或飞书事件归一化成不可变 Trigger；Eval 分两层判断，gate 是确定性代码（谁可以发起工作、以什么强度），assessment 才是模型研判；accept 创建带不可变 Mandate 的 Ticket，Assignment 把 Ticket 绑到一个执行器实例。准入矩阵默认拒绝：名单外的人无论是否 @ 你都是 ignore，名单内但没点名只是 inferred 候选，名单内加点名才是 explicit 请求。已订阅线程的跟进消息直送执行器，绕过 gate 和 Eval，但文档强调这种投递"grants no new authority"。快车道省的是分派，不是授权。这就是长文订阅直通在代码里的样子。
+
+真正托住这套系统的不是两个 LLM，而是 Engine。docs/007 把它写成 invariant：Engine is the only writer of Triggers, Threads, Decisions, Tickets and Assignments，全部方法同步、每命令一个事务。Router 和 Worker 都只能通过 Engine 命令改状态；accept 一次性原子创建 Ticket、Mandate、Assignment、Subscriptions 和确认消息。所以"双层"的实质是单写者状态机，加两类工具受限的 LLM Session，加一条持久 Effects 队列：事务内入队、提交后执行，回滚的命令不会漏出副作用。
+
+工单生命周期：接单、排队、准备目录、执行、报告就绪等人审、评审意见送回执行。执行中可以转"等事件"或"等人"，这两种状态不占执行名额。PR 合并或关闭后工单结束但订阅保留，原线程再留言按原授权恢复；恢复前 Mandate 要重新校验。任何状态人都可以叫停，停了就不再恢复。Mandate 本身不可变：想要更大的 scope，开新 Ticket；只有三种操作能改它，accept 创建、人的 stop 撤回、恢复校验失败 revoke。Policy 版本变更不立即收回授权，而是丢弃运行中的 Eval 重新排队。直通也不是黑箱：人类消息到达开放 Ticket 时，宿主在同一事务里给 main Session 发一条 follow_up notice，Router 知情但不决策；只有消息没有任何 Ticket 认领、Worker 交回、或 Ticket 结束退回未读跟进时，才重新进入 Eval。
+
+几个工程细节决定这套系统能不能长期无人值守。Trigger 的 id 是确定性哈希，重复 accept 只创建一个 Ticket，所以重读消息是安全的；游标只在全部 Trigger 存储后推进，恢复时回退 5 秒。Eval 永不等待：超时默认 120 秒，从候选送进主 Session 当前 turn 起算，没送达的候选永不过期；过期重排两次、第三次记 unavailable，面板只在这个决定仍最新且不满 24 小时时才请求人工。投递 outbox 从 5 秒开始倍增重试到 300 秒。执行并发默认 3 个 worker，可配 1 到 16，人类消息能多借一个 slot，老工单复活优先于新启动；turn 结束后后台命令最多再跑 30 分钟，到点 kill 并报 waiting。崩溃恢复不靠外部进程：启动时 resume 按最旧优先遍历开放 Ticket，被打断的执行注入一条恢复提示，要求模型先检查工作目录、git 历史和 GitHub 状态，不要重复已完成的外部操作；已处于 waiting/ready/blocked/failed 的报告保持原状。执行器是每 Ticket 一个 DSH Session 加一个工作目录，状态落在本机一个 orchestrator.sqlite 文件里。状态库没有删除机制，事件与回执无限增长，作者把这条如实列成已知局限。
+
+部署形态是一个 Python 脚本在 tmux 里管一个 DSH profile：优雅停止等 300 秒、超时不强杀；退出码把故障分成"restart 能修"和"需要人"两类，后两类脚本明确拒绝自动恢复。另有一个 operator profile 每小时巡检健康状态，按退出码决定沉默、报告或带尊重停止标记地重启。
+
+提示词与代码的边界划得很清楚：改提示词文本不会改变 gate、Mandate、工具检查和账号包装，那些仍由代码强制；外部文本永远是数据，不是规则。Router 的分派提示词禁止把请求改写成工作计划，"Could we add a dark mode?" 原样转发，routing note 上限 30 词；host 还拒绝 orchestrator 的 sleep、轮询、超 30 秒的 shell 和超 5 秒的 job 等待，前台命令超 5 秒自动转后台。Worker 一侧要求独立复核，"acceptance by the orchestrator is not proof"；ready 的定义是 reviewed implementation 且相关检查通过，没有 PR 的代码改动不能 ready；auto-merge 只允许改动小于 200 行且 approval 覆盖该 commit。每条发到 GitHub 的消息必须以一行披露开头：this is by an automated agent, not a human。交人的协议同样克制：Worker 通过 human_action 只提一个具体问题，并用 question_for_trigger_id 指定回到那个人写字的地方问；普通进展、模型重试、预算错误，单独都不足以授权一条 IM 消息。
+
+主动性的闸门是三档接单模式：off 不接推断候选；observe 是默认，主动候选照常研判，判"该接"也只记一条"本来会接"的忽略记录；auto 才真接单。明确请求在三档下都有效。官方建议先跑 observe 看记录，再切 auto。配合 docs/000 的哲学：占用尽可能少的人类注意力，只在被请求或团队写下的规则允许时动手，主动工作先 record-only，只在人必须行动或能用上结果时说话，一次问一个结构化具体问题。
+
+
+安全上原型相当坦白。docs/006 写明主 Session 与执行器预设 danger-full-access，以运维者本人的系统用户执行；账号包装只选择身份，不做进程隔离；执行器可以按绝对路径执行程序、读运维者家目录。官方建议用专用系统账号、只放 agent 凭据。docs/003 的原话更直接："These wrappers and directories establish defaults, not a security boundary. A worker can still execute a program by absolute path." blockedCommands 只按命令名拦截。同文档开放问题第一条是：Trigger 里哪些字段可信（来源给的发送人、线程归属），哪些不可信（正文、引用）。事件驱动把不可信输入的入口从终端一个扩到了群里任何一句话。
+
+## 五、实验：p95 从 29.5 到 15.7，以及直通省的不是时间
+
+长文第七节是自测合成负载：每次约 300 条消息、约 20 条工作请求，其余是闲聊、跟进、叫停和 CI；编码用只消耗时间的假工具替代，所以测的是调度不是写码；每方案跑 5 次；消息间隔与工作时长按四分之一缩放，模型调用耗时真实。四种方案：
+
+| 方案 | P50 / P95（分钟） | 单次读缓存 token（全部 Session） |
+|---|---|---|
+| Super-agent | 12.4 / 15.7 | 2323 万 |
+| 去掉直通的 Super-agent | 12.6 / 15.5 | 3177 万 |
+| 单 Session + Subagent，中性提示 | 20.4 / 29.5 | 605 万 |
+| 单 Session + Subagent，提示优先委派 | 13.8 / 29.0 | 1082 万 |
+
+四个读数。第一，中性提示下模型 5 次运行一次都没调用 Subagent，所有活在主会话里干、不停被新消息打断。"在合适时使用子代理"这种提示词，约束力约等于零。第二，改成优先委派后 4 次委派、1 次嫌活"很小"自己做，那一次的完成时间立刻拖出长尾。分不分工交给模型临场判断，长尾就消不掉；双层是在系统层面取消这个判断。第三，去掉直通后完成时间基本不变，但 Router 决定次数增加约 30%，读缓存 token 从 2323 万涨到 3177 万，增幅约 37%。直通的收益是 Router 的开销，不是任务速度。第四，按官方表计算，Super-agent 的读缓存 token 约为中性单会话的 3.8 倍（2323 万对 605 万）；原文在这里只给定性表述：拿更多 token 换更短更稳的完成时间。
+
+Router 压测单独做：Router 真模型、Worker Mock，事件到达从每分钟约 1 条加到约 40 条，平均批大小 1.0 升到 2.8，单请求耗时只从 2.5 秒到 3.9 秒，摊到每个决定从 6.4 秒降到 1.6 秒。这也解释了为什么去掉直通、Router 峰值负载变大，仍未触到单 Router 的吞吐瓶颈。官方的结论是：目前团队规模下，不必过早水平切分而牺牲全局连续性。
+
+引用这些数字时要带上限定：合成负载、假编码工具、5 次重复、时间缩放。它证明的是调度机制的相对收益，不是"Super-agent 写码快一倍"。还有一层边界：开源仓库本身不附任何评估数据，全文搜 p95 或 benchmark 只命中一条测试夹具注释；上表全部数字出自长文第七节的内部自测。
+
+## 六、长文与原型之间：一张差距清单
+
+把长文设计和开源原型逐条对齐，差距清楚：
+
+- Router 不配 Bash：原型主 Session 有 bash 和 read，"不读代码"是提示词规则，不是工具限制。
+- 云端计算 + 数据库状态 + 端侧 daemon：原型状态是本机一个 SQLite 文件，Worker 以运维者本人用户执行、不需审批。
+- 外部 Watchdog：原型没有长文那种"让模型判实质进展"的监督模块；有的是运维层每小时巡检（独立 operator profile 看退出码、按规则重启），离语义级监督还差一步。
+- Router 较轻模型、Worker 最强模型：原型两个角色模型配置默认都是 null，沿用 DSH 默认，仓库没有硬编码模型名，分层留给部署者自己配。
+- 异步 ReAct：Harness 已实现但默认关；原型用"前台命令超 5 秒自动转后台、完成自动唤醒"近似。
+- 权限边界：白名单加准入表，包装命令与目录只是默认约定。
+
+所以准确的说法是：开源的是思路在一个仓库加一个群上的验证切片，不是长文完整系统的开源版。长文第八节自己也列了开放问题：Router 何时切分、粒度如何，Worker 何时需要直接通信、用什么拓扑，都无定论；针对 Router 的事件判别、批量分派、上下文召回做专项训练（co-design）是方向；链式召回只解决近期检索，跨月长程记忆是主要瓶颈；聊天窗口中心是路径依赖，交互可以发生在 GitHub Issue 和 PR 这类领域界面里；组织级配备实例本质是划分上下文共享与隔离边界，跨边界协同就是 A2A，且各自代表不同权限边界；安全上，云端 loop 一旦被注入攻破，连着的所有端侧设备都有被控风险，而凭据只要进模型上下文就有泄露风险，需要"完全不接触凭据本身就能使用凭据"的机制。
+
+判断一个架构值不值得跟，看它敢不敢把自己的简化写出来。这份清单全写出来了。
+
+## 七、对照与给自建者的清单
+
+放到坐标系里看。单会话加 Subagent：主会话临场分工，状态本地，无主动性，是正式功能。Agent Teams：Lead 拆单任务，共享任务列表加互发消息，状态在 ~/.claude/teams/ 本地目录，实验性默认关。Anthropic Managed Agents：不涉分工，云状态加托管沙箱，2026 年公测。Super-agent：Router 系统分派，环境事件驱动，Worker 互不通信靠同订 Thread 感知冲突，文章云数据库、原型 SQLite，BYOM，有主动性，研究原型。
+
+和我[前篇](/blog/dsh-superagent)拆过的本机 DSH 主 harness 对照也有意思：主 harness 的 super agent 是"模型加工具循环加上下文防线"，编排靠子代理、workflow、goal 这些可选组件；Router/Worker 原型则用 cordis bundle patch 挂载：插入三个插件（飞书源默认关）和两个 agent preset；两层 Session 都是普通 DSH Agent Session，模型 turn 循环仍是 DSH 自己的，编排循环在宿主侧，每 2 秒一个 pass 加一条持久 Effects 队列。它不替换主循环，而是在主循环之上把"谁持有全局视图"制度化。我在本机 2.0.22-next 安装包的 343 个包和组合清单里 grep 不到 router、worker、superagent 字样，印证了它是独立可选 bundle，不是内置能力。两者共享同一套底座：事件溯源的会话循环、上下文压缩栈、沙箱与审批阶梯。
+
+如果你要自建常驻 agent，与模型无关、可以直接搬的四件事：订阅直通，给已建立归属的对话开免分派快车道；两级过滤，确定性条件进代码、语义判断进模型；Inline 与 Spill，把窗口当 cache 管而不是当垃圾桶；外部 Watchdog，用独立回路判实质进展而不是判进程存活。再加一条态度：先 observe 后 auto，让主动性的闸门默认朝保守方向开。
+
+## 结语
+
+长文结语说，他们没有提出新理论，只是把计算机系统里的经典工程思想用到 agent 系统上：批处理、快慢路径、投机执行、缓存、存算分离、外部控制回路。我同意这个自评，也认为这正是它的价值。模型能力每半年换一代，而这些结构处理的是注意力、连续性和信任边界，换一代模型也不会过时。内部实例已经在持续运行，参与问题复现、评审响应和 harness 自身迭代。原型只有一个提交，但方向已经清楚：Session 应当是系统的实现细节，而不应是用户的认知负担。
+
+## 参考来源
+
+1. DeepSeek Harness 团队. Super-agent 设计探索：迈向更自主的 Agent 系统. 微信公众号, 2026-10-31. https://mp.weixin.qq.com/s/zoS7GlReWPhfCjENGxXCdg
+2. deepseek-ai/dsh-superagent-prototype. GitHub, 2026-10-31, v0.1.0 (MIT). https://github.com/deepseek-ai/dsh-superagent-prototype （docs/000–008 与 src 为本文一手证据）
+3. 掘金. DeepSeek Super-agent 拆解：Router 分派、Worker 订阅直通. https://juejin.cn/post/7702483654677954598
+4. 掘金. DeepSeek Super-agent 设计解读：两层 Session、订阅直通与 dsh-superagent 原型. https://juejin.cn/post/7702941619264503808
+5. 腾讯云开发者社区. DeepSeek 开源 Super-agent：Agent 不下班、不用你 @，任务完成时间直接砍半（概述交叉核验）. 2026-11. https://cloud.tencent.cn/developer/article/2774420
+6. 阿里云开发者社区. DeepSeek Super-agent 架构解析：从单任务 Agent 到持续运行的任务系统（摘要交叉核验）. 2026-11-04. https://developer.aliyun.com/article/1779111
+7. IT之家（搜狐转载）. DeepSeek 提出 Super-agent 架构设计：Router 与 Worker 双层架构. 2026-10-31. https://www.sohu.com/a/1095485776_114760
+8. 新浪财经 / TechWeb. DeepSeek 发布全新 Agent 架构（发布时间锚点）. 2026-10-31. https://finance.sina.com.cn/wm/2026-10-31/doc-inixcwwm7197135.shtml ；https://m.techweb.com.cn/ucrss/2026-11-01/2980177.shtml
+9. 本机 DSH 2.0.22-next 安装包解包源码（交叉核验：原型非内置 bundle）. 本地路径 /tmp/dsh-src，无公开链接，验证记录见调研包 sources.md S7.
+10. 前篇：[DeepSeek Harness 的 Super Agent 是怎么跑起来的：一份源码级拆解](/blog/dsh-superagent). 本系列, 2026-11-20.
