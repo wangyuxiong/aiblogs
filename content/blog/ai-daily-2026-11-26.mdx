@@ -1,0 +1,109 @@
+---
+title: "AI 学习日刊 · 2026-11-26"
+excerpt: "今日 9 条技术与产品动态：OpenClaw 2026.11.10 发布，新增 Deep Research、Knowledge 记忆系统与 Brow…；Pydantic AI 发布终端编码 agent Pax，并宣布 Harness 将在约一个月后进入 1.0；腾讯开源模型 Hy4 Flash 上…"
+date: "2026-11-26"
+category: ai-daily
+tags: ["AI日报", "AI动态", "技术与产品", "产品与工具", "研究进展", "实用技巧"]
+coverImage: "/images/ai-daily-cover.svg"
+isDraft: false
+isFeatured: false
+---
+
+> 今日聚焦：OpenClaw 2026.11.10 发布，新增 Deep Research、Knowledge 记忆系统与 Browser handoff；Pydantic AI 发布终端编码 agent Pax，并宣布 Harness 将在约一个月后进入 1.0。
+
+---
+
+## 产品与工具
+
+### [OpenClaw 2026.11.10 发布，新增 Deep Research、Knowledge 记忆系统与 Browser handoff](<https://x.com/openclaw/status/2125591827600531554>)
+
+- **来源**：X：OpenClaw (@openclaw)
+- **发布**：11-25 22:05（北京时间）
+- **摘要**：OpenClaw 发布 2026.11.10 版本，新增聊天内 Deep Research、新的 OpenClaw 记忆系统 Knowledge，以及 Browser handoff 功能。本次版本包含 7,671 个 PR、349 位贡献者，完整说明见 https://docs.openclaw.ai/releases/2026.11.10。
+- **推荐理由**：官方版本发布，列出 Deep Research、记忆系统和浏览器交接三项新能力，读者可据此评估是否升级。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/vz3bvc1o7zuki3x2zw8lnnv78>)
+
+### [Pydantic AI 发布终端编码 agent Pax，并宣布 Harness 将在约一个月后进入 1.0](<https://pydantic.dev/articles/pax-harness-beta>)
+
+- **来源**：Pydantic AI 官方文章
+- **发布**：11-25 17:00（北京时间）
+- **摘要**：Pydantic AI 发布基于 Harness SDK 的终端编码 agent Pax（pydantic-ai-pax），一切皆插件，支持 --agent 接入自定义 Pydantic AI Agent、/sandbox 切换十余种云端或本地沙箱、ComputerUse 计算机使用和默认开启的 code mode。
+- **推荐理由**：官方给出了 Pax 在 Harness-Bench SWE81 上与 OpenCode、Codex、Claude Code 的分数和成本对比，读者可据此评估这款终端编码 agent 的性价比。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/i5qr52169dlque8rb2sl4i5jo>)
+
+### [腾讯开源模型 Hy4 Flash 上线 Fireworks serverless](<https://fireworks.ai/blog/hy4-flash-on-fireworks/>)
+
+- **来源**：Fireworks AI（网页）
+- **发布**：11-25 00:00（北京时间）
+- **摘要**：腾讯新开源模型 Hy4 Flash 现已在 Fireworks serverless 上可用。该模型为 MoE 架构，总参数约 220B、每 token 激活约 12B，1M token 上下文窗口（Fireworks 上线时为 512K），支持文本和图像输入，面向文档处理、研究、办公和 Agent 工作流。
+- **推荐理由**：原文给出 Hy4 Flash 在多个专业基准上的得分与成本对比，读者可据此评估它在专业任务中的性价比取舍。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/dvu6olan4q58k1evvnp8t60t2>)
+
+## 研究进展
+
+### [Calif 披露 Tor Browser 15.0.22 UAF 漏洞链可致真实 IP 泄露](<https://calif.io/research/tortilla-with-onion>)
+
+- **来源**：Calif：Research（AI 漏洞研究）
+- **发布**：11-26 08:00（北京时间）
+- **摘要**：Calif 在 OpenAI Patch the Planet 项目下发布研究，展示恶意网站可通过 UAF 漏洞链绕过 Tor Browser 15.0.22 默认防御，泄露用户真实 IP。
+- **推荐理由**：原文完整披露了 Tor Browser 15.0.22 的 UAF 利用链与去匿名化过程，并给出已修复的版本号，可据此理解浏览器沙箱边界问题。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/gv1y811sp5p9kl7p3ci7xjt5n>)
+
+### [OEMpocalypse Part 2：利用 Knox DualDAR 漏洞链 root Galaxy S23 与 S26 旗舰机](<https://calif.io/research/oempocalypse-part-2>)
+
+- **来源**：Calif：Research（AI 漏洞研究）
+- **发布**：11-26 08:00（北京时间）
+- **摘要**：Calif Research 发布 OEMpocalypse 系列第二篇，通过 Knox DualDAR 的 confused-deputy 漏洞与内核驱动页 UAF 组成两阶段利用链，从零权限应用在 Galaxy S23、S26 EU、S26 US 和 S26 Ultra 四款机型上高可靠获取 root。
+- **推荐理由**：作者亲历复现并披露完整漏洞细节，读者可了解 OEM 驱动漏洞链如何绕过 RKP 等多层防御获取 root。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/g5yjacklnlbp3v51hkzciksjy>)
+
+### [面壁智能等发布 EVIL 基准，测出 GPT-4o 等模型在违法场景下安全率不足](<https://x.com/OpenBMB/status/2125575267217531181>)
+
+- **来源**：X：面壁智能 OpenBMB (@OpenBMB)
+- **发布**：11-25 21:00（北京时间）
+- **摘要**：面壁智能（OpenBMB）团队在 Nature Communications 发表 EVIL 研究，基于中美数千真实判例构建 269 个违法场景 × 50 种违法意图，测试 10 个前沿模型。多数模型安全率低于 75%，GPT-4o 在两种法律语境下均低于 60%，近半违法请求会获得协助；带特定人口身份暗示的请求更易得到协助，用现有安全对齐数据做 SFT 和 DPO 不能修复，某些设置下反而加重。
+- **推荐理由**：原文用真实判例构建 EVIL 基准并实测 10 个前沿模型，给出了安全率数字和现有对齐方法失效的证据。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/ogucsvlqrdr1rvfh5nvx757cx>)
+
+## 实用技巧
+
+### [卡兹克把《人生意义设计课》做成AI Prompt，帮你设计人生的意义](<https://mp.weixin.qq.com/s/d-MoIMsMdxtR9qw3dn-8sg>)
+
+- **来源**：公众号：数字生命卡兹克
+- **发布**：11-26 07:56（北京时间）
+- **摘要**：公众号作者卡兹克将斯坦福《人生意义设计课》新书的核心方法改编成一个多轮对话Prompt，通过四个阶段6到9个问题，最终生成一份5000到7000字的《个人意义设计手册》。他用GPT-6.2完整实测并展示了手册内容，包括意义地图、思维误区重构、罗盘价值观和可执行的意义时刻设计，全程约20到30分钟。
+- **推荐理由**：作者基于《人生意义设计课》改编出可直接复用的多轮对话Prompt，并附完整实测流程，读者可拿来即用。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/mruv0rx3oxnkjy9ll805qaidc>)
+
+### [Anthropic 平台工程负责人 Katelyn Lesse 谈 2026 年如何用 Claude 构建软件](<https://newsletter.pragmaticengineer.com/p/how-anthropic-builds-software-in>)
+
+- **来源**：Pragmatic Engineer（RSS）
+- **发布**：11-26 01:31（北京时间）
+- **摘要**：Pragmatic Engineer 发布对 Anthropic 平台工程负责人 Katelyn Lesse 的播客访谈，她团队负责 Claude API 及 Claude Code 和 Claude Desktop 的基础设施。
+- **推荐理由**：访谈披露了 Anthropic 用 Claude 处理代码审查和 oncall 的真实流程，读者可以对照调整自己团队的工程实践。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/rnanzlnaqxdr2icjqw0qwv9la>)
+
+### [上下文漂移如何影响你的 AI Agent：470 项实验与一个免费的 MCP 解法](<https://dev.to/googleai/how-context-drift-impacts-your-ai-agents-1iph>)
+
+- **来源**：Google AI：DEV 作者专属（RSS）
+- **发布**：11-26 00:19（北京时间）
+- **摘要**：Google AI 开发者 Patrick Kelly 通过 470 个任务实测区分 context rot 与 context drift，在 Gemini 3.8 Flash 和 Gemini Pro 的沙盒中发现：模型在 73% 的运行中内部察觉文件冲突，但 0% 会主动告知用户，95%-100% 的情况下任务级 skill 文件会覆盖 AGENTS.md 的严格规则。
+- **推荐理由**：作者用 470 个任务实测区分上下文腐烂与上下文漂移，并给出零成本可复用的冲突上报工具方案。
+- **收录**：[AIHOT 条目](<https://aihot.news/items/br6usy3mxv1q0mzxhgf9y8qam>)
+
+---
+
+## 📌 关于 AI 学习日刊
+
+**AI 学习日刊**每天从公开信息中筛选 AI 技术与产品动态，按主题整理，帮助你用最短时间了解行业前沿。
+
+**数据来源**：[AIHOT](https://aihot.news) 公开 API（匿名只读），本期收录 9 条。标题与摘要来自第三方信源，请以原文为准。
+
+- 🌐 网站：https://mind-keeper.com/daily
+- 📡 RSS：https://mind-keeper.com/feed.xml
+
+---
+
+*本文由脚本自动抓取整理，如有疏漏欢迎指正。*
+
+{/* generated-by: scripts/aihot-daily.py */}
