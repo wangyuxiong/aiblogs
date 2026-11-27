@@ -1,0 +1,170 @@
+---
+title: "连 Agent 主循环都是插件：DSH 微内核到底激进在哪"
+excerpt: "一切皆插件不稀奇，稀奇的是连 Agent 主循环都是插件，卸载还能自动回滚。从 Cordis 微内核 2811 行源码看 DSH 的激进设计：可逆效应、响应式依赖、热更边界与自我进化闭环。"
+date: 2026-11-24
+category: ai-tutorial
+tags: ["AI Agent", "DeepSeek Harness", "微内核", "插件化", "源码分析"]
+isDraft: false
+coverImage: "/images/dsh-microkernel-cover.png"
+---
+
+# 连 Agent 主循环都是插件：DSH 微内核到底激进在哪
+
+![封面](/images/dsh-microkernel-cover.png)
+
+"一切皆插件"这句话，VS Code 十年前就说过。DeepSeek Harness（下称 DSH）的官方 README 也这么写："It is built on an everything-is-a-plugin architecture"。如果只停在这句话，DSH 听起来像又一个插件化应用。
+
+但翻到它的组合清单 dsh-base/cordis.patch.yml 第 517 行，会发现一件不太寻常的事：Agent 主循环，那个"调模型、跑工具、重复"的核心循环，只是清单里一条普通条目，id 叫 agent-loop，和会话存储、文件系统沙箱、模型适配器排在同一张表里，配置项是一个空数组。它不是内核的一部分，它可以被禁用、被覆盖、被换成另一个实现。
+
+更激进的是卸载语义。在 DSH 里，卸掉一个插件不是"把代码删了"，而是把这个插件对共享环境做过的修改，按注册的相反顺序逐条撤销：注册过的事件监听、提供过的服务、挂过的定时器，全部回滚。这件事有一篇北京大学与 DeepSeek 合作的论文做形式化背书，arXiv 编号 2608.25512，标题叫《A Programming Paradigm for Spatiotemporal Composability》。
+
+这篇文章想回答一个问题：同样是插件化，DSH 到底激进在哪？我的结论先放在这里：激进不在插件数量，而在它把"组合"从编译期搬到了运行期，并且给运行期组合补上了两条大多数插件系统没有的保证。下面按代码、机制、动机三层拆开。
+
+## 一、内核有多小：2811 行，零业务词
+
+先看内核本体。DSH 底座叫 Cordis，本机安装包里是 4.1.0 版（上游 cordisjs 的 DeepSeek 内置分支）。核心包 src 目录我逐行数过：fiber.ts 820 行、reflect.ts 436 行、events.ts 371 行、registry.ts 337 行、utils.ts 294 行、logger.ts 276 行、context.ts 146 行、service.ts 115 行、index.ts 16 行，合计 2811 行 TypeScript。
+
+在这 2811 行里 grep agent、model、session、llm 这些业务词，一个都找不到。内核只做五件事：依赖容器（Context）、插件生命周期（Fiber）、依赖声明与解析（Registry/Inject）、服务注册与响应式通知（Reflect）、事件分发（Events）。模型适配器、工具注册表、会话日志、UI 设置页，全部在核外。官方随附的插件包清单 packages.md 列了 280 个可安装插件包，连"Agent 循环的并行工具调用上限设置页"都是一个独立插件。
+
+官方 Cordis Primer 把这套设计概括成五个概念，其中两个值得逐字引用。其一："A context is a repository of services"，服务认领一个稳定的 `ctx.<key>`，比如 ctx.tools、ctx.llm、ctx.sessions，其他插件"find services via key instead of importing a concrete implementation"。其二："Registrations are reversible effects"，提示词片段、工具 schema、模型适配器、事件监听，全部通过 ctx.effect() 或 ctx.on() 安装，"so reload and teardown unwind them predictably"。
+
+第一句解释了为什么主循环能换：消费者依赖的是 ctx.agents 这个服务键，不是某个具体循环实现。第二句解释了为什么敢在运行中换：每次注册都自带逆操作。这两句就是全文的纲。
+
+![架构分层](/images/microkernel-layers.png)
+
+## 二、时间可组合性：卸载即逆序回滚
+
+论文给这条保证起的名字是 temporal composability，摘要里的定义是"the ability to completely revert a component's side effects upon removal"。落到代码，核心在 fiber.ts 的 effect() 方法。
+
+它的文档注释写得很直白：execute 立即执行，产生的 disposer 被收集起来，"run (in reverse order) either when the returned disposer is called or when the fiber unloads, whichever comes first"，重复调用 disposer 是空操作。实现只有一行关键逻辑：
+
+```ts
+for (const disposable of disposables.splice(0).reverse()) { ... }
+```
+
+splice(0) 取走全部 disposer，reverse() 倒序，异步 disposer 用 promise 链串联。后注册的先撤销，和栈的回退顺序一致：后注册的操作往往依赖先注册的操作，倒着拆，被依赖的一方最后才撤，不会拆出悬空引用。
+
+![逆序回滚](/images/rollback-lifo.png)
+
+effect 接受三种形状：单个 disposer、返回 disposer 的 promise、以及同步或异步迭代器。第三种允许插件边初始化边注册清理动作，generator 每 yield 一个 disposer 就立即入账，中途失败时已注册的部分照样能被撤销。非法形状直接抛 TypeError('Invalid effect')，框架不猜你的意图。
+
+论文给迭代器形态起了个名字叫"reified delimited continuation"（具体化的受限续体），定理 16 证明了它的 LIFO 回滚语义：顺序应用、逆序撤销，每一次撤销恰好恢复到那次应用所面对的状态。
+
+插件树的递归拆卸靠一个精巧的设计：子 fiber 的生命周期本身是父 fiber 的一个 effect（fiber.ts 第 271 行，this.dispose = parent.fiber.effect(...)）。父插件卸载时，子插件作为它的副作用之一被自动撤销，不需要额外的树遍历代码。对已经卸载的 fiber 再注册 effect，会抛 CordisError('INACTIVE_EFFECT')，消息是"cannot create effect on inactive context"，僵尸注册在入口就被挡住。
+
+还有一个细节叫 effectInertia：公开的 disposer 是单发的，但结构所有者和外层 effect 可以"join"一次已经启动的清理。注释原文是"Public effect disposers remain single-shot, but structural owners and outer effects must still be able to join a cleanup that another caller started"。这解决的是并发卸载时两个调用方撞车的问题：一方已经在拆，另一方不必重复拆，等结果就行。
+
+官方 Primer 的实践规则把这套机制的使用纪律说清楚了："Every registration should have a disposer"，如果拆卸顺序有讲究，"keep the related work in one effect so disposal unwinds in the intended sequence"。顺序敏感的操作放同一个 effect，框架保证它们按意图回退。
+
+对照物不用找别的，论文自己就拿 VS Code 开刀（§1.2.1）。VS Code 的扩展跑在共享的 extension host 进程里，单个扩展的代码无法在运行时卸载：activate 执行之后，禁用或卸载它必须重启整个 host。这不是论文的单一说法，官方用户文档明示卸载扩展会"prompts you to restart the extension host"，禁用同样提示重启；源码里 deactivate 只有 5 秒宽限，超时强退，抛错只记日志。
+
+论文把 deactivate 定性为 host 终止时的优雅关闭回调，而且把"副作用的清理"和"副作用的创建"拆在两个函数里，称之为违反 locality of concern。扩展之间想互相调用，走 vscode.extensions.getExtension(...).exports，返回值没有类型契约，默认是 any。论文还抓了一组数据（2026 年 6 月 9 日的 VS Code Marketplace）：排名前 100 的扩展里 87 个含可执行代码，只有 7 个对非内置扩展声明了 extensionDependencies。依赖关系基本靠口头约定。
+
+差别就在这里：传统插件系统的卸载是"通知你一声，你自己收拾"，收拾不收拾、收拾干净没有，宿主不知道也不管。Cordis 的卸载是"你做的每笔修改我都记着账，逆序核销"。前者靠插件作者自觉，后者靠运行时强制。
+
+这条保证在业界有多稀缺，看两个最成熟的对照就知道。IntelliJ 的动态插件文档写明：动态卸载只对满足一串严格限制的插件可用，生产环境卸载出问题就要求用户重启 IDE。OSGi 是动态模块生命周期最完整的工业规范，uninstall 的措辞是"To whatever extent possible"移除相关资源，被依赖的旧 bundle 能力保留到 refresh 或框架重启。连它们都把残留写进了规范，Cordis 把"完全撤销"写成定理，激进程度可见一斑。
+
+还有两个细节，比"逆序"本身更能说明问题。其一，逆是单侧的，论文原话："Undoing is one-sided: what an inverse is held to is g ∘ f and never f ∘ g."只要求"撤销能回到修改前"，不要求"重做能回到撤销前"，这放宽了对插件作者的要求。
+
+其二，拆卸顺序不只在一个插件内部逆序，跨插件也有保证：提供服务的插件要卸载时，框架先等所有依赖它的消费者完成自己的拆卸，再撤销它的绑定。论文举的例子很实在：关闭连接池，通常意味着把连接还给提供连接池的那一方，所以提供方的 teardown 必须排在消费者之后。
+
+## 三、空间可组合性：依赖会自己说话
+
+第二条保证叫 spatial composability，论文定义是"the ability to declare and reactively manage inter-component dependencies"。代码形态在 registry.ts 和 reflect.ts。
+
+依赖声明用 inject，支持数组、对象、类继承三种写法，类继承沿原型链合并。插件声明了 inject: ['counter']，就会等到 counter 服务存在才激活。Primer 的原话："load order is expressed through service requirements rather than manual boot sequencing"。加载顺序不再是启动脚本里精心排列的调用序列，而是依赖图的拓扑结果。
+
+服务提供方用 ctx.provide(name, value) 注册，返回一个 disposer。文档注释里有个关键短语：服务注销时"waking dependents"。实现上，provide 内部调 notify(names)，notify 找到所有依赖该服务的 fiber，逐个触发 _refresh()。依赖出现，消费者自动激活；依赖消失，消费者自动停用；依赖换了实现，消费者自动重启。这就是论文说的 reactive coeffects：组件把依赖写成一份规格，上下文每次变化都按规格通知它激活、失活还是无关。
+
+![响应式依赖](/images/reactive-deps.png)
+
+一个容易忽略的设计：依赖解析记录的是提供者的身份（fiber 的 uid，新鲜生成、永不复用），不是服务的值。换一个提供者，即使新值和旧值完全相等，消费者也会重载。论文的解释是，记录值会让"不同 fiber 提供相等值"在比较中不可区分，而动态组合恰恰需要对"谁在提供"敏感。
+
+isolate 机制再加一层：服务名可以映射到独立的 realm，隔离服务实例。官方技能文档的区分很精确，scope 管贡献与事件可见性，isolate 管服务实例。同一个服务键在不同 realm 里可以是不同实现，preset 插件提供私有服务时，把提供者和所有消费者圈进同一个 realm 即可。
+
+北大李博杰那本《深入理解 AI Agent》第 9 章把缺少这条保证的世界描述得很具体：每个模块只能用临时手段自己察觉依赖的出现、消失和改变，一次简单的代码替换可能静默地破坏依赖方，或者引入循环依赖。声明式依赖加响应式激活，就是把这类临时手段收编成框架统一机制。
+
+## 四、声明式组合与热更新：改配置也是组合操作
+
+有了前两条保证，Loader 才敢做声明式热更新。DSH 的组合用 YAML patch 表达，方言有几个硬规则：insert 追加条目；带 id 不带 insert 是覆盖既有行；config 整体替换，绝不深合并，官方文档原话"config is replaced wholesale, never deep-merged"，要改一个字段就得把整份配置重述一遍。这个设计看似笨，实则避免了深合并语义里"谁覆盖谁"的无穷歧义。disabled 字段可以是布尔、null，甚至 !!js 表达式，每次挂载决策时重新求值，环境变了插件自动启停。
+
+Loader 源码里有一段注释很能见微知著：internal/plugin 钩子区分了 8 种 fiber 卸载情形，从"插件自己调 dispose"到"HMR 触发的删除"到"inject 检查失败"再到"祖先组被禁用"，每种走不同路径。注释逐字写道："plugin hmr: delete(plugin) -> runtime dispose -> fiber dispose"。卸载不是一刀切的 delete，框架要知道这次卸载是谁发起的、该不该把 disabled 状态写回配置树。
+
+配置协调（reconciliation）是双向的：运行时改配置，internal/commit 钩子把新配置经 schema 反解析后写回 entry 树；配置文件改了，Loader 对比差异决定重启哪些 fiber。还有一档更轻的：schema 可以声明 Volatile 引用，纯易变配置的变更"commits into the running references without restarting"，通过 loader/volatile-update 事件通知插件。改一个阈值不必重启整个插件。
+
+桌面端另有 dsh-hmr 包，README 一句话概括："Reload plugin source and configuration while an application is running"，模块替换、Include 刷新、profile 配置变更共用一个队列。
+
+论文里的 HMR 设计还有一个前端工程师会眼红的性质：不需要开发者标注接受边界。原话是"HMR therefore needs no developer-annotated acceptance boundaries, as opposed to Webpack or Vite HMR"。Webpack/Vite 的热更新要模块自己声明 accept，Cordis 不用，因为 fiber 已经界定了组件的全部副作用，替换模块就是卸载旧 fiber、实例化新 fiber。重载还是事务性的：任何模块 import 失败（比如语法错误），恢复缓存、每个受影响的条目从备份的旧组件重建，系统绝不进入半重载状态。
+
+这一切的底气来自元理论里的合流定理（Theorem 80）：到达静止态的系统，其状态只是最终配置的函数，与中途的装卸顺序无关。论文的口号是"its dynamic history leaves no trace"，动态历史不留痕迹。增量地热更和从头冷启动，终点一样。
+
+![热更边界](/images/hmr-boundary.png)
+
+但热更新有两条边界。第一，"Existing sessions and their children keep the plugin revision they started with"，运行中的会话保持启动时的插件修订，改完要开新会话验证。第二，"Installing a bundle executes plugin code in the Host process, so it requires Full access or approval"，装插件等于在宿主进程执行代码，必须过审批。热插拔不等于无政府。
+
+## 五、为什么激进：为 Agent 自我进化铺路
+
+讲到这里可以回答动机问题了。插件化本身不新鲜，新鲜的是把主循环也插件化，并且给装卸补上形式化保证。图什么？
+
+《深入理解 AI Agent》第 9 章的 DSH 案例节给了一个我认为是全文最重的判断，逐字引用："自我进化的上限，不取决于模型能写出多好的代码，而取决于承载它的系统具有多强的可组合性。"同节还有一句："不存在一个只能由人类维护的特权内核。"
+
+逻辑链是这样的：Agent 要自我进化，就要能修改自己的工具、提示词、甚至循环逻辑；每一次自我修改本质上都是一次动态组合；如果修改一个组件必须整体重启进程，丢掉全部进程内状态、打断进行中的任务，自我修改的成本就高到不可用；如果组件间依赖靠临时手段察觉，一次代码替换就可能静默破坏依赖方，自我修改的风险就不可控。时间可组合性解决"改完能不能干净回退"，空间可组合性解决"改了会不会悄悄弄坏别人"。两条都补齐，Agent 才敢在运行中给自己动手术。
+
+![自我进化闭环](/images/self-evolution.png)
+
+DSH 的扩展子系统文档里，模型自写插件走 dynamicCordisRunner：提案、审批、挂载、可卸载，生命周期全程受控。
+
+书籍同时点破了两条代价。其一，模型写出的插件只活在进程内存里，重启即消失，不能被自动提升为正式插件，要留下来必须走 worktree 加 Pull Request 那条更慢的路。可组合性解决"能不能安全地装卸"，没有解决"该不该装"。其二，运行中的插件会改变模型可见的工具集和提示片段，请求前缀一变，KV Cache 就从变化处开始失效。DSH 插件的说明文档需要专门描述对上下文和 KV Cache 的影响。激进架构的账单，一部分记在推理成本上。
+
+## 六、论文背书与诚实边界
+
+背书论文是 arXiv:2608.25512，作者 Yifan Shi、Wei Zhang、Tianyi Cui，署名单位北京大学与 DeepSeek-AI，2026 年 8 月 26 日提交，92 页 1 图 2 表，分类 cs.PL 与 cs.SE。我把 92 页全文读了一遍，挑工程上最有用的三层说。
+
+![论文三层](/images/paper-three-layers.png)
+
+第一层是建模。effect 被定义成 Γ → Γ × (Γ → Γ) 类型的函数：作用于当前上下文，返回修改后的上下文和一个显式逆操作。逆操作被运行时累积成一个 accumulator，卸载就是应用它。协效果那边，依赖表被建模成依赖类型的有限偏函数，提供服务的 set 操作本身就是一个 effect，论文点题的原话是"coeffect operations are effects, and effects are revertible"。两套机制共用一套追踪，这是"context paradigm"的实质：组件与环境的一切交互都经过同一个上下文实体中介。
+
+第二层是演算。论文定义了组件 lifecycle 的四个状态（Inactive、Reloading、Active、Unloading）和九条规则，证明了三件事：保持性（良构注册表被每条规则保持）、进展性（依赖无环时不死锁且必然终止，步数有递归上界）、合流性（前文引过的"动态历史不留痕迹"）。不同组件的效果交错互不干扰，靠的是独立性归约：操作不同服务键的组件天然独立，共享键的组件由提供者携带交换性见证。
+
+第三层是边界，这部分比保证本身更值得读。恢复只到观测等价，论文原话："a monotone allocator is not rewound, a heap's layout free does not restore, and a message already sent stays sent."单调分配器不会倒带，free 不恢复堆布局，已发出的消息保持已发出。论文把越界操作分成 acquisition 和 emission 两阶段：open、malloc、fork 这类"获取"在边界内被追踪、可撤销；write 的字节、send 的报文这类"发射"跨越边界，不追踪。补救手段是补偿（删除已创建的文件、退还已收的费用），补偿可以按 LIFO 复合，但元理论保证不随之迁移。
+
+还要说清三条局限，论文自己写得明白。其一，论文没有实证评估：唯一的案例研究是聊天机器人框架 Koishi（4 年开发、4000 多个社区插件），作者自己定性为"存在性与采纳度"的观察结果，不是受控对比；元理论是纸笔证明，没有 Coq/Lean 机器验证。
+
+其二，逆操作的正确性是作者义务，论文原话："an obligation on the component author rather than a property the runtime verifies"，框架只保证你登记的逆会被逆序执行。
+
+其三，组件自身的内存状态不存活于 reload，撤销是从干净状态重来，想要状态前向迁移得另做 DSU 式机制，论文列为未来工作；依赖环会让相关组件永久 inactive（好在可以从声明静态预测）；依赖按 key 做名义链接，版本兼容靠 semver 约定，框架强制不了。
+
+论文的结论节把自进化 agent harness 列为未来验证方向：AI agent 持续生成并替换自己的 harness 组件、几乎不需要人类监督。DSH 就是冲着这个场景去的工程实现。而 DSH 目前是 developer preview，README 用全大写警告"THERE WILL BE COMPATIBILITY-BREAKING CHANGES"，本文所有行号与默认值以 2026 年 11 月的本机安装包为准。
+
+## 结语：给 harness 设计者的四条清单
+
+把 DSH 的选择翻译成可迁移的经验，是四条：
+
+一、副作用必须带逆操作。注册即登记 disposer，卸载由运行时逆序核销，别指望插件作者自觉收拾。
+
+二、依赖必须声明式。加载顺序交给依赖图，别交给启动脚本；依赖变化要能自动驱动消费者激活与停用。
+
+三、内核不持有业务。主循环、模型、会话都做成服务键背后的可替换实现，内核只保留容器、生命周期、依赖、事件。
+
+四、热更要划会话边界。运行中会话钉住启动修订，新行为开新会话验证；装插件是执行代码，审批不能省。
+
+"一切皆插件"的激进版本，不是插件更多，而是内核更少、保证更硬。DSH 把宝押在可组合性上，赌的是 Agent 自我进化时代，系统的上限由地基决定，不由模型决定。这个赌注值不值，要看接下来一年里，模型给自己动手术的次数会不会多到重启不起。
+
+## 参考来源
+
+1. Shi, Yifan, Wei Zhang, Tianyi Cui. A Programming Paradigm for Spatiotemporal Composability. arXiv:2608.25512, 2026-08-26. https://arxiv.org/abs/2608.25512
+2. cordiverse/paper 官方仓库. https://github.com/cordiverse/paper
+3. DeepSeek Harness 官方仓库（README / docs/architecture.md / docs/cordis-primer.md / docs/subsystems/extensions.md / packages/extensions/README.md）. https://github.com/deepseek-ai/deepseek-harness
+4. 本机 DSH 安装包解包源码（dsh-desktop-next，cordis 4.1.0，2026-11-24 验证）：`@deepseek-ai/cordis/src/{fiber,registry,reflect,events}.ts`；@deepseek-ai/cordis-plugin-loader/src/index.ts；@deepseek-ai/dsh-base/cordis.patch.yml；@deepseek-ai/dsh-hmr/README.md。本地路径 /tmp/dsh-src。
+5. DSH 随附官方技能文档：cordis-composition-reference（含 references/packages.md，280 个插件包清单）、cordis-plugin-development、editing-cordis-compositions。位于 app.asar.unpacked/node_modules/@deepseek-ai/dsh-agent-preset/skills/。
+6. 李博杰.《深入理解 AI Agent：设计原理与工程实践》第 9 章"Agent 的持续进化"，案例节"DeepSeek Harness 以'一切皆插件'实现自我进化". https://github.com/agent-memory-atlas-archive/bojieli--ai-agent-book （book/chapter9.md）
+7. VS Code 对照事实出自论文 §1.2.1（含 2026-06-09 Marketplace 统计：top 100 扩展 87 个含可执行代码、7 个声明非内置 extensionDependencies）。官方佐证：Extension Anatomy（activate/deactivate 生命周期）https://code.visualstudio.com/api/get-started/extension-anatomy ；Extension Host https://code.visualstudio.com/api/advanced-topics/extension-host ；卸载/禁用提示重启宿主 https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_uninstall-an-extension 。源码佐证：deactivate 5 秒宽限（src/vs/workbench/api/common/extHostExtensionService.ts）、Disposable 自愿约定且异步 dispose 不等待（src/vscode-dts/vscode.d.ts L1708-1744），均在 https://github.com/microsoft/vscode 。
+8. 论文精读笔记（92 页全文提取，含定义/定理编号与逐字引文）：/Users/metaboy/Documents/posts/dsh-microkernel/research/raw/paper-close-reading.md
+9. 社区文章（可访问性已逐篇核验，引用以可证部分为限）：
+   - 腾讯云《"微内核时刻"：一切皆插件，连 Loop 都能热插拔》（技术方舟，2026-08-14）https://developer.cloud.tencent.cn/article/2726144 ——正文为前端渲染不可抓取，仅概述可证。
+   - 知乎《深度拆解/后悔药》https://zhuanlan.zhihu.com/p/2072616657814545020 ——403 登录墙，未能访问正文。
+   - dev.to《DeepSeek Harness: How DeepSeek Uses Cordis to Redefine Autonomous AI Agents》（raphiki，2026-09-12，Kernel to Edge 三部曲 Part 2）https://dev.to/worldlinetech/deepseek-harness-how-deepseek-uses-cordis-to-redefine-autonomous-ai-agents-599 ——架构定性可引；文中示例包名与官方清单不符、性能数字无来源，不采用。
+   - dev.to《"Reversible" Does Not Mean Running in Reverse》（canonical，2026-08-21，可逆计算视角）https://dev.to/canonical/reversible-does-not-mean-running-in-reverse-the-mathematical-essence-of-the-deepseek-harness-4mba ——机制描述与源码互证可引；GitHub 星数断言未验证，不采用。
+   - CSDN《Agent Harness 的热插拔难题：DeepSeek 论文揭秘 Cordis 如何管理可逆副作用与动态依赖》（powertoolsteam）https://blog.csdn.net/powertoolsteam/article/details/164450088 ——论文工程向解读；API 命名（ctx.set/get/use）与现行 provide/plugin 不一致，引用需注明。
+10. 业界可逆卸载对照：IntelliJ Dynamic Plugins https://plugins.jetbrains.com/docs/intellij/dynamic-plugins.html ；OSGi Core 8.0.0 生命周期规范 §4.4.10 https://docs.osgi.org/specification/osgi.core/8.0.0/framework.lifecycle.html 。
+11. 前篇：[DSH 工程拆解](/blog/dsh-superagent)；[Router/Worker 双层架构](/blog/dsh-router-worker)
