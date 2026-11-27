@@ -1,0 +1,30 @@
+content/blog/ai-context-traffic.mdx
+  h_8e789064a132a5 1-85
+content/blog/ai-hallucination-traffic.mdx
+  h_8e789064a132a5 1-95
+content/blog/dsh-autonomy.mdx
+  h_8e789064a132a5 1-157
+content/blog/dsh-compaction.mdx
+  h_8e789064a132a5 1-371
+content/blog/dsh-microkernel.mdx
+  h_8e789064a132a5 1-170
+content/blog/dsh-persistence.mdx
+  h_8e789064a132a5 1-276
+content/blog/dsh-recap.mdx
+  h_8e789064a132a5 1-308
+content/blog/test-ai-loop.mdx
+  h_8e789064a132a5 1-146
+scripts/publish-batch-20261128.py
+  h_8e789064a132a5 1-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "549432c5d431c7a8564e80c8e2ea996c5e3554e7",
+  "prompts": {},
+  "humans": {
+    "h_8e789064a132a5": {
+      "author": "xingzhi <yuxiong.wangyx@antgroup.com>"
+    }
+  }
+}
